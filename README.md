@@ -31,16 +31,6 @@ qBittorrent 5.0 or newer. A few features need a newer version and stay hidden or
 
 To update, replace the contents of the `qbminimal` folder with the new release and reload the page.
 
-To go back to qBittorrent's own interface, turn off **Use alternative Web UI** in qBittorrent's options. While qbminimal is open, the same switch is in **Settings > Web UI**.
-
-### Behind a reverse proxy
-
-qbminimal also works when qBittorrent is served from a sub-path, such as `https://example.com/qbittorrent/`. Open it with the trailing slash.
-
-### Your password
-
-qbminimal never stores your password. After you sign in, the browser keeps qBittorrent's own session cookie, which page scripts can't read. The login form uses standard field names, so password managers fill it in.
-
 ## Development
 
 ```bash
