@@ -82,10 +82,18 @@
     @apply border-border outline-ring/50;
   }
 
-  /* Should iPhone Safari still turn a number into a link, it keeps the text's own color. */
-  a[x-apple-data-detectors] {
-    color: inherit;
-    text-decoration: inherit;
+  /* iPhone Safari can still turn numbers such as peer addresses into links, and styles them
+     itself, inline, in colors of its own that can vanish into the background. They keep the
+     text's own look, and a tap does nothing. */
+  a[x-apple-data-detectors],
+  a[href^='tel:'],
+  a[href^='sms:'],
+  a[href^='facetime'],
+  a[href^='maps:'] {
+    color: inherit !important;
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+    pointer-events: none;
   }
 
   /* A sideways swipe at the end of something scrolled stays on the page, rather than going
@@ -220,12 +228,24 @@
   }
 }
 
-/* iPhone and iPad: text follows the size picked in Settings, Display & Text Size, as Apple's own
-   apps do. Everything sized in rem grows and shrinks with it. */
-@supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
-  html {
-    font: -apple-system-body;
-    line-height: 1.5;
+/* iPhone and iPad: Safari zooms the page in when a text field under 16px gets focus, and the zoom
+   stays afterwards. Fields there are 16px at least. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* Phones: the tab bar's height (set by Layout) plus its gap above the home indicator. Bars and
+   panels kept above it, and the page's room at its end, use this. */
+:root {
+  --bottom-nav-height: calc(var(--nav-bar-height, 3.75rem) + max(0.5rem, env(safe-area-inset-bottom)));
+}
+@media (min-width: 48rem) {
+  :root {
+    --bottom-nav-height: 0px;
   }
 }
 

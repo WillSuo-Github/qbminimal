@@ -37,29 +37,25 @@ function LogoutButton({ className, iconOnly = false }: { className?: string; ico
   )
 }
 
-// How much of the bottom of the screen the phone's floating tab bar takes, from its top edge down,
-// shared as --bottom-nav-height for the bars and panels kept just above it, and the header's height
-// as --header-height, for the page's room at its top. Both scroll content underneath.
+// The phone tab bar's own height, as --nav-bar-height (index.css adds its gap above the home
+// indicator to make --bottom-nav-height), and the header's, as --header-height. The page scrolls
+// under both, with that much room at each end. Only the bars' own sizes are measured: Safari's
+// window height changes with zooming and its toolbar, so it can't place them.
 function useBarSizes() {
   const header = useRef<HTMLElement>(null)
   const nav = useRef<HTMLElement>(null)
   useEffect(() => {
     if (typeof ResizeObserver === 'undefined') return
     const root = document.documentElement.style
-    const measure = () => {
-      const bar = nav.current
-      // Hidden on wide screens, where it takes nothing.
-      root.setProperty('--bottom-nav-height', bar && bar.offsetHeight ? `${Math.max(window.innerHeight - bar.getBoundingClientRect().top, 0)}px` : '0px')
+    const observer = new ResizeObserver(() => {
+      if (nav.current?.offsetHeight) root.setProperty('--nav-bar-height', `${nav.current.offsetHeight}px`)
       if (header.current) root.setProperty('--header-height', `${header.current.offsetHeight}px`)
-    }
-    const observer = new ResizeObserver(measure)
+    })
     if (nav.current) observer.observe(nav.current)
     if (header.current) observer.observe(header.current)
-    window.addEventListener('resize', measure)
     return () => {
       observer.disconnect()
-      window.removeEventListener('resize', measure)
-      root.removeProperty('--bottom-nav-height')
+      root.removeProperty('--nav-bar-height')
       root.removeProperty('--header-height')
     }
   }, [])
@@ -94,10 +90,11 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
   return (
     // Below 768px the page fills the screen and scrolls by itself, under a glass header and a
     // floating glass tab bar, with room at both ends so its start and end can always come clear
-    // of them. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap
+    // of them. Nothing may make it wider than the screen: iPhone Safari would then widen the whole
+    // layout, open it zoomed in, and push the tab bar out of sight. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap
     // near the bottom would then reopen the toolbar instead of reaching the tab bar.
     // --sidebar-width lets panels fixed to the window line up with the main column.
-    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:min-h-0">
+    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:min-h-0 max-md:overflow-hidden">
       <header ref={headerRef} className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] max-md:absolute max-md:inset-x-0">
         <div className="flex h-14 items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <div className="flex min-w-0 items-center gap-2">
