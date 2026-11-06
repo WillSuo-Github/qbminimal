@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { columnWidth, getColumn, moveColumn, resizeColumn, shiftColumn, trackerHost, visibleColumns, type ColumnId, type ColumnLayout } from '@/lib/torrentColumns'
-import { formatEta, getStateBadge, getStateLabel, ratioColor, peerPair as pair } from '@/lib/torrentState'
+import { DOWN_SPEED_COLOR, formatEta, getStateBadge, getStateLabel, ratioColor, UP_SPEED_COLOR, peerPair as pair } from '@/lib/torrentState'
 import type { SortDirection } from '@/lib/listSettings'
 import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
@@ -20,7 +20,7 @@ const WORD_COLUMNS: ReadonlySet<ColumnId> = new Set(['name', 'state', 'category'
 const PINNED_LEFT = 'sticky start-0 z-10 bg-card group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]'
 const PINNED_SELECTED = 'bg-muted group-hover:bg-muted'
 
-// Download green and upload blue, as in the header.
+// A dash in place of a speed of zero, so the moving torrents stand out.
 const speed = (bytes: number, color: string) => (bytes > 0 ? <span className={color}>{formatBytes(bytes)}/s</span> : <span className="text-muted-foreground/60">-</span>)
 const limit = (bytes: number) => (bytes > 0 ? `${formatBytes(bytes)}/s` : '∞')
 
@@ -47,8 +47,8 @@ function Cell({ torrent, id }: { torrent: Torrent; id: ColumnId }): ReactNode {
       )
     case 'num_seeds': return pair(torrent.num_seeds, torrent.num_complete)
     case 'num_leechs': return pair(torrent.num_leechs, torrent.num_incomplete)
-    case 'dlspeed': return speed(torrent.dlspeed, 'text-green-600 dark:text-green-500')
-    case 'upspeed': return speed(torrent.upspeed, 'text-blue-600 dark:text-blue-400')
+    case 'dlspeed': return speed(torrent.dlspeed, DOWN_SPEED_COLOR)
+    case 'upspeed': return speed(torrent.upspeed, UP_SPEED_COLOR)
     case 'eta': return formatEta(torrent.eta)
     case 'ratio': return <span className={ratioColor(torrent.ratio)}>{torrent.ratio.toFixed(2)}</span>
     case 'category': return <span title={torrent.category}>{torrent.category}</span>

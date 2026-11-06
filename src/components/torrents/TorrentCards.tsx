@@ -2,7 +2,7 @@ import type { ComponentType, ReactElement, ReactNode } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Users } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes } from '@/lib/format'
-import { formatEta, getStateColor, getStateLabel, peerPair as pair } from '@/lib/torrentState'
+import { DOWN_SPEED_COLOR, formatEta, getStateColor, getStateLabel, ratioColor, UP_SPEED_COLOR, peerPair as pair } from '@/lib/torrentState'
 import { cn } from '@/lib/utils'
 import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
@@ -20,12 +20,23 @@ interface TorrentCardsProps {
 }
 
 // A number with an icon in place of its name, which the tooltip and screen readers give.
-function Fact({ icon: Icon, label, children }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; label: string; children: ReactNode }) {
+function Fact({ icon: Icon, label, className, children }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; label: string; className?: string; children: ReactNode }) {
   return (
-    <span className="flex items-center gap-0.5" title={label}>
+    <span className={cn('flex items-center gap-0.5', className)} title={label}>
       <Icon className="h-2.5 w-2.5" aria-hidden />
       <span aria-hidden>{children}</span>
       <span className="sr-only">{label}</span>
+    </span>
+  )
+}
+
+// A speed in the list's colors, or a faint dash while it's zero, as in the table.
+function Speed({ icon: Icon, bytes, color, label }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; bytes: number; color: string; label: string }) {
+  const moving = bytes > 0
+  return (
+    <span className={cn('flex items-center gap-0.5', moving ? color : 'text-muted-foreground/60')} title={label}>
+      <Icon className="h-2.5 w-2.5" aria-hidden />
+      {moving ? `${formatBytes(bytes)}/s` : '-'}
     </span>
   )
 }
@@ -65,12 +76,12 @@ export function TorrentCards({ torrents, selected, showCheckboxes, onToggle, ope
               {/* One line of facts, each with an icon. Hovering or a screen reader gives the words. */}
               <div className="mt-0.5 flex items-center gap-x-2 overflow-hidden text-[10px] whitespace-nowrap text-muted-foreground tabular-nums">
                 <span>{formatBytes(torrent.size)}</span>
-                <span className="flex items-center gap-0.5"><ArrowDown className="h-2.5 w-2.5 text-green-500" aria-hidden />{formatBytes(torrent.dlspeed)}/s</span>
-                <span className="flex items-center gap-0.5"><ArrowUp className="h-2.5 w-2.5 text-blue-500" aria-hidden />{formatBytes(torrent.upspeed)}/s</span>
+                <Speed icon={ArrowDown} bytes={torrent.dlspeed} color={DOWN_SPEED_COLOR} label={t('Down speed')} />
+                <Speed icon={ArrowUp} bytes={torrent.upspeed} color={UP_SPEED_COLOR} label={t('Up speed')} />
                 {torrent.progress < 1 ? (
                   <Fact icon={Clock} label={t('ETA {eta}', { eta: formatEta(torrent.eta) })}>{formatEta(torrent.eta)}</Fact>
                 ) : (
-                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })}>{torrent.ratio.toFixed(2)}</Fact>
+                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })} className={ratioColor(torrent.ratio)}>{torrent.ratio.toFixed(2)}</Fact>
                 )}
                 {/* Connected seeds and peers; the title adds how many are in the swarm. */}
                 <Fact icon={Users} label={t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })}>

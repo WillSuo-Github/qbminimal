@@ -77,6 +77,10 @@ export function formatEta(seconds: number): string {
 }
 
 // Red for a poor ratio, through yellow, to green and blue for a healthy one.
+// Download green and upload blue, in the list, the cards and the header alike.
+export const DOWN_SPEED_COLOR = 'text-green-600 dark:text-green-500'
+export const UP_SPEED_COLOR = 'text-blue-600 dark:text-blue-400'
+
 export function ratioColor(ratio: number): string {
   if (ratio < 0.5) return 'text-red-500'
   if (ratio < 1) return 'text-orange-500'
