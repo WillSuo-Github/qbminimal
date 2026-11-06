@@ -809,7 +809,7 @@ const pt: Record<string, string> = {
   'Upload limit': 'Limite de upload',
   'Write cache overload': 'Excesso de escrita em cache',
   'qBittorrent has no network connection': 'O qBittorrent não tem ligação de rede',
-  'Drag to resize. Double-click to reset.': 'Arraste para redimensionar. Faça duplo clique para repor.',
+  'Drag to resize. Double-click to fit the content.': 'Arraste para redimensionar. Faça duplo clique para ajustar ao conteúdo.',
   'Resize {label}': 'Redimensionar {label}',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': 'Ordenar por {label}. Arraste para mover ou prima Alt e uma tecla de seta.',
   'Card view': 'Vista em cartões',
@@ -1258,6 +1258,15 @@ const pt: Record<string, string> = {
   'Peer ID client': 'Cliente de ID do par',
   'Files': 'Ficheiros',
   'Popularity': 'Popularidade',
+  'Set global speed limits': 'Definir limites de velocidade globais',
+  'Global speed limits': 'Limites de velocidade globais',
+  'The alternative speed limits are on, so these change them.': 'Os limites alternativos de velocidade estão ativados, por isso altera esses.',
+  'For all torrents together.': 'Para todos os torrents em conjunto.',
+  'Last checked {time}': 'Última verificação: {time}',
+  'Make the details smaller': 'Reduzir os detalhes',
+  'Make the details larger': 'Ampliar os detalhes',
+  'Show more': 'Mostrar mais',
+  'Show less': 'Mostrar menos',
 }
 
 export default pt

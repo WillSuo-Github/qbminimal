@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Bell, Magnet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { magnetHandlerUrl } from '@/lib/incoming'
@@ -54,7 +55,7 @@ export function BrowserSettings() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Row icon={<Bell className="h-4 w-4" />} title={t('Finished downloads')} description={t('Say when a torrent finishes while this page is open. In the background this is a notification, if the browser allows it.')}>
-          <Button variant={notices ? 'secondary' : 'outline'} size="sm" aria-pressed={notices} onClick={toggleNotices}>{notices ? t('On') : t('Off')}</Button>
+          <Switch aria-label={t('Finished downloads')} checked={notices} onCheckedChange={() => void toggleNotices()} />
         </Row>
         <Row
           icon={<Magnet className="h-4 w-4" />}

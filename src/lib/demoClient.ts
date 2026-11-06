@@ -129,6 +129,7 @@ export class DemoClient implements ApiClient {
   private banned: string[] = []
   private cookies: Cookie[] = []
   private altSpeed = false
+  private limits = { down: 0, up: 0 }
   private sessionPaused = false
   private rules: Record<string, RSSRule> = {}
   private creatorTasks: TorrentCreatorTask[] = []
@@ -198,7 +199,7 @@ export class DemoClient implements ApiClient {
       trackers,
       server_state: {
         connection_status: 'connected', dht_nodes: 312, dl_info_speed: dl, up_info_speed: ul,
-        dl_info_data: 146 * GiB, up_info_data: 83 * GiB, dl_rate_limit: 0, up_rate_limit: 0,
+        dl_info_data: 146 * GiB, up_info_data: 83 * GiB, dl_rate_limit: this.limits.down, up_rate_limit: this.limits.up,
         free_space_on_disk: 512 * GiB, alltime_dl: 4.1 * 1024 * GiB, alltime_ul: 8.6 * 1024 * GiB, global_ratio: '2.10',
         total_peer_connections: 46, use_alt_speed_limits: this.altSpeed, session_state: this.sessionPaused,
         last_external_address_v4: '203.0.113.7',
@@ -207,6 +208,8 @@ export class DemoClient implements ApiClient {
   }
 
   async toggleSpeedLimitsMode() { this.altSpeed = !this.altSpeed }
+  async setGlobalDownloadLimit(limit: number) { this.limits.down = Math.max(limit, 0) }
+  async setGlobalUploadLimit(limit: number) { this.limits.up = Math.max(limit, 0) }
   async pauseSession() { this.sessionPaused = true }
   async resumeSession() { this.sessionPaused = false }
   async banPeers(peers: string[]) { this.banned = [...new Set([...this.banned, ...peers.map(p => p.replace(/:\d+$/, '').replace(/^\[|\]$/g, ''))])] }

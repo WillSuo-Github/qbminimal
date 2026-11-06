@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Ban } from 'lucide-react'
+import { Ban, ChevronDown } from 'lucide-react'
 import { BannedPeers } from '@/components/BannedPeers'
 import { ConfirmAction } from '@/components/ConfirmAction'
 import { Button } from '@/components/ui/button'
@@ -20,20 +20,30 @@ const percent = (fraction: number | undefined) => `${Math.round((fraction ?? 0) 
 const speed = (bytes: number | undefined, color: string) =>
   bytes && bytes > 0 ? <span className={color}>{formatBytes(bytes)}/s</span> : <span className="text-muted-foreground/60">-</span>
 
-// Everything qBittorrent's peer list shows, as labelled values. Hovering the flags explains them.
+// The rest of what qBittorrent's peer list shows, as labelled values. Tapping the flags explains them,
+// one per line, as hovering doesn't work on phones.
 function PeerFacts({ peer }: { peer: TorrentPeer }) {
+  const [flagsShown, setFlagsShown] = useState(false)
+  const flags = peer.flags?.trim()
+  const meanings = (peer.flags_desc ?? '').split('\n').map(line => line.trim()).filter(Boolean)
+  const flagsValue = flags && meanings.length > 0 ? (
+    <button
+      type="button"
+      aria-expanded={flagsShown}
+      onClick={() => setFlagsShown(shown => !shown)}
+      className="rounded-sm underline decoration-dotted underline-offset-2 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {flags}
+    </button>
+  ) : flags || '-'
   // Label, value, an optional tooltip, and whether it takes a whole line (long names do).
   const facts: [string, ReactNode, string?, boolean?][] = [
     [t('Port'), peer.port ?? '-'],
     [t('Connection'), peer.connection || '-'],
-    [t('Flags'), peer.flags?.trim() || '-', peer.flags_desc],
-    [t('Progress'), percent(peer.progress)],
-    [t('Down speed'), speed(peer.dl_speed, DOWN_SPEED_COLOR)],
-    [t('Up speed'), speed(peer.up_speed, UP_SPEED_COLOR)],
+    [t('Flags'), flagsValue, peer.flags_desc],
     [t('Downloaded'), formatBytes(peer.downloaded ?? 0)],
     [t('Uploaded'), formatBytes(peer.uploaded ?? 0)],
     [t('Relevance'), percent(peer.relevance)],
-    [t('Client'), peer.client || t('Unknown client'), undefined, true],
     [t('Peer ID client'), peer.peer_id_client || '-', undefined, true],
   ]
   const files = (peer.files ?? '').split('\n').filter(Boolean)
@@ -45,6 +55,11 @@ function PeerFacts({ peer }: { peer: TorrentPeer }) {
           <dd className="min-w-0 truncate text-end tabular-nums" title={title || (typeof value === 'string' || typeof value === 'number' ? String(value) : undefined)}>{value}</dd>
         </div>
       ))}
+      {flagsShown && (
+        <div className="col-span-full rounded-md bg-muted/60 px-2 py-1 text-muted-foreground">
+          {meanings.map(line => <p key={line}>{line}</p>)}
+        </div>
+      )}
       {files.length > 0 && (
         <div className="col-span-full flex min-w-0 gap-2">
           <dt className="shrink-0 text-muted-foreground">{t('Files')}</dt>
@@ -54,6 +69,41 @@ function PeerFacts({ peer }: { peer: TorrentPeer }) {
         </div>
       )}
     </dl>
+  )
+}
+
+// One peer, compact: its address, client, progress and speeds on two short lines. The arrow
+// beside it opens everything else qBittorrent knows about it.
+function PeerRow({ id, peer, children }: { id: string; peer: TorrentPeer; children: ReactNode }) {
+  const [expanded, setExpanded] = useState(false)
+  const label = expanded ? t('Show less') : t('Show more')
+  return (
+    <li className="flex items-start gap-2 px-2 py-1.5">
+      <PeerFlag code={peer.country_code} country={peer.country} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <p className="min-w-0 truncate font-medium tabular-nums" dir="ltr" title={peer.ip ?? id}>{peer.ip ?? id}</p>
+          <p className="ms-auto shrink-0 text-xs text-muted-foreground tabular-nums">{percent(peer.progress)}</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground tabular-nums">
+          <span className="min-w-0 truncate" title={peer.client || undefined}>{peer.client || t('Unknown client')}</span>
+          <span className="ms-auto shrink-0">↓ {speed(peer.dl_speed, DOWN_SPEED_COLOR)}</span>
+          <span className="shrink-0">↑ {speed(peer.up_speed, UP_SPEED_COLOR)}</span>
+        </div>
+        {expanded && (
+          <>
+            {(peer.host_name || peer.country) && (
+              <p className="mt-1 break-all text-xs text-muted-foreground">{[peer.host_name, peer.country].filter(Boolean).join(' · ')}</p>
+            )}
+            <PeerFacts peer={peer} />
+          </>
+        )}
+      </div>
+      <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-expanded={expanded} aria-label={label} title={label} onClick={() => setExpanded(!expanded)}>
+        <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+      </Button>
+      {children}
+    </li>
   )
 }
 
@@ -105,15 +155,7 @@ export function PeersTab({ hash }: { hash: string }) {
       ) : (
         <ul className="divide-y text-sm">
           {entries.map(([id, peer]) => (
-            <li key={id} className="flex items-start gap-2 px-2 py-2">
-              <PeerFlag code={peer.country_code} country={peer.country} />
-              <div className="min-w-0 flex-1">
-                <p className="break-all font-medium tabular-nums" dir="ltr">{peer.ip ?? id}</p>
-                {(peer.host_name || peer.country) && (
-                  <p className="break-all text-xs text-muted-foreground">{[peer.host_name, peer.country].filter(Boolean).join(' · ')}</p>
-                )}
-                <PeerFacts peer={peer} />
-              </div>
+            <PeerRow key={id} id={id} peer={peer}>
               <ConfirmAction
                 label={t('Ban {value}', { value: peer.ip ?? id })}
                 title={t('Ban this peer?')}
@@ -124,7 +166,7 @@ export function PeersTab({ hash }: { hash: string }) {
               >
                 <Ban className="h-3.5 w-3.5" />
               </ConfirmAction>
-            </li>
+            </PeerRow>
           ))}
         </ul>
       )}

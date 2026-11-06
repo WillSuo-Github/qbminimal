@@ -809,7 +809,7 @@ const ru: Record<string, string> = {
   'Upload limit': 'Ограничение отдачи',
   'Write cache overload': 'Перегрузка кэша записи',
   'qBittorrent has no network connection': 'У qBittorrent нет подключения к сети',
-  'Drag to resize. Double-click to reset.': 'Перетащите, чтобы изменить ширину. Дважды щёлкните, чтобы сбросить.',
+  'Drag to resize. Double-click to fit the content.': 'Перетащите, чтобы изменить ширину. Дважды щёлкните, чтобы подогнать под содержимое.',
   'Resize {label}': 'Изменить ширину: {label}',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': 'Сортировать по: {label}. Перетащите, чтобы переместить, или нажмите Alt и клавишу со стрелкой.',
   'Card view': 'Карточки',
@@ -1258,6 +1258,15 @@ const ru: Record<string, string> = {
   'Peer ID client': 'ИД клиента',
   'Files': 'Файлы',
   'Popularity': 'Спрос',
+  'Set global speed limits': 'Задать общие ограничения скорости',
+  'Global speed limits': 'Общие ограничения скорости',
+  'The alternative speed limits are on, so these change them.': 'Включены альтернативные ограничения скорости, поэтому изменятся они.',
+  'For all torrents together.': 'Для всех торрентов вместе.',
+  'Last checked {time}': 'Последняя проверка: {time}',
+  'Make the details smaller': 'Уменьшить панель сведений',
+  'Make the details larger': 'Увеличить панель сведений',
+  'Show more': 'Показать больше',
+  'Show less': 'Показать меньше',
 }
 
 export default ru

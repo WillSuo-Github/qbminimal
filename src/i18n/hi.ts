@@ -809,7 +809,7 @@ const hi: Record<string, string> = {
   'Upload limit': 'अपलोड सीमा',
   'Write cache overload': 'राइट कैश ओवरलोड',
   'qBittorrent has no network connection': 'qBittorrent का कोई नेटवर्क कनेक्शन नहीं है',
-  'Drag to resize. Double-click to reset.': 'आकार बदलने के लिए खींचें। रीसेट करने के लिए डबल-क्लिक करें।',
+  'Drag to resize. Double-click to fit the content.': 'आकार बदलने के लिए खींचें। सामग्री के अनुसार करने के लिए डबल-क्लिक करें।',
   'Resize {label}': '{label} का आकार बदलें',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': '{label} से क्रमबद्ध करें। खिसकाने के लिए खींचें, या Alt और एक ऐरो की दबाएँ।',
   'Card view': 'कार्ड व्यू',
@@ -1258,6 +1258,15 @@ const hi: Record<string, string> = {
   'Peer ID client': 'पीयर ID क्लाइंट',
   'Files': 'फ़ाइलें',
   'Popularity': 'लोकप्रियता',
+  'Set global speed limits': 'वैश्विक स्पीड सीमाएँ तय करें',
+  'Global speed limits': 'वैश्विक स्पीड सीमाएँ',
+  'The alternative speed limits are on, so these change them.': 'वैकल्पिक स्पीड सीमाएँ चालू हैं, इसलिए आप उन्हें बदलेंगे।',
+  'For all torrents together.': 'सभी टोरेंट के लिए मिलाकर।',
+  'Last checked {time}': 'पिछली जाँच: {time}',
+  'Make the details smaller': 'विवरण छोटा करें',
+  'Make the details larger': 'विवरण बड़ा करें',
+  'Show more': 'और दिखाएँ',
+  'Show less': 'कम दिखाएँ',
 }
 
 export default hi

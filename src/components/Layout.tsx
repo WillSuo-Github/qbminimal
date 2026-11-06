@@ -3,11 +3,10 @@ import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { DropOverlay } from '@/components/DropOverlay'
+import { GlobalSpeeds } from '@/components/GlobalSpeeds'
 import { SpeedLimitToggle } from '@/components/SpeedLimitToggle'
 import { PAGES, type PageId } from '@/components/navigation'
-import { useTotalSpeeds } from '@/hooks/useApi'
 import { useSession } from '@/hooks/useSession'
-import { formatBytes } from '@/lib/format'
 import { readStored, writeStored } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 import { t } from '@/i18n'
@@ -16,25 +15,6 @@ interface LayoutProps {
   page: PageId
   onNavigate: (page: PageId) => void
   children: ReactNode
-}
-
-// Current speeds: stacked on phones, side by side on wider screens. Each number sits by its arrow
-// in room for the longest value ("1023.9 KB/s"), so neither arrow moves as the numbers change.
-function Speeds() {
-  const { data: speeds } = useTotalSpeeds()
-  if (!speeds) return null
-  const row = (arrow: string, color: string, speed = 0) => (
-    <span className="flex items-center gap-1">
-      <span className={color}>{arrow}</span>
-      <span className="w-[11ch]">{formatBytes(speed)}/s</span>
-    </span>
-  )
-  return (
-    <div className="flex flex-col items-end text-[10px] leading-tight tabular-nums whitespace-nowrap sm:flex-row sm:gap-2.5 sm:text-xs" aria-label={t('Current speeds')}>
-      {row('↓', 'text-green-500', speeds.down)}
-      {row('↑', 'text-blue-500', speeds.up)}
-    </div>
-  )
 }
 
 function LogoutButton({ className, iconOnly = false }: { className?: string; iconOnly?: boolean }) {
@@ -57,22 +37,33 @@ function LogoutButton({ className, iconOnly = false }: { className?: string; ico
   )
 }
 
-// The phone's tab bar height (which includes the iPhone's home indicator area) is shared as
-// --bottom-nav-height for the bars and panels fixed just above it.
-function useBottomBarHeight() {
-  const ref = useRef<HTMLElement>(null)
+// How much of the bottom of the screen the phone's floating tab bar takes, from its top edge down,
+// shared as --bottom-nav-height for the bars and panels kept just above it, and the header's height
+// as --header-height, for the page's room at its top. Both scroll content underneath.
+function useBarSizes() {
+  const header = useRef<HTMLElement>(null)
+  const nav = useRef<HTMLElement>(null)
   useEffect(() => {
-    const bar = ref.current
-    if (!bar || typeof ResizeObserver === 'undefined') return
+    if (typeof ResizeObserver === 'undefined') return
     const root = document.documentElement.style
-    const observer = new ResizeObserver(() => root.setProperty('--bottom-nav-height', `${bar.offsetHeight}px`))
-    observer.observe(bar)
+    const measure = () => {
+      const bar = nav.current
+      // Hidden on wide screens, where it takes nothing.
+      root.setProperty('--bottom-nav-height', bar && bar.offsetHeight ? `${Math.max(window.innerHeight - bar.getBoundingClientRect().top, 0)}px` : '0px')
+      if (header.current) root.setProperty('--header-height', `${header.current.offsetHeight}px`)
+    }
+    const observer = new ResizeObserver(measure)
+    if (nav.current) observer.observe(nav.current)
+    if (header.current) observer.observe(header.current)
+    window.addEventListener('resize', measure)
     return () => {
       observer.disconnect()
+      window.removeEventListener('resize', measure)
       root.removeProperty('--bottom-nav-height')
+      root.removeProperty('--header-height')
     }
   }, [])
-  return ref
+  return { header, nav }
 }
 
 const SIDEBAR_KEY = 'qbminimal.sidebar'
@@ -85,7 +76,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
     setSidebarShown(!sidebarShown)
   }
   const scroller = useRef<HTMLDivElement>(null)
-  const bottomBar = useBottomBarHeight()
+  const { header: headerRef, nav: navRef } = useBarSizes()
 
   // A newly opened page starts at its top.
   useEffect(() => {
@@ -101,15 +92,15 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
   ))
 
   return (
-    // Below 1200px the header, the page and the tab bar stack in a box the size of the screen,
-    // and only the page between them scrolls, so the tab bar can never cover its end. A
-    // scrolling window would also make iPhone Safari collapse its toolbar, and the next tap near
-    // the bottom would then reopen the toolbar instead of reaching the tab bar.
+    // Below 768px the page fills the screen and scrolls by itself, under a glass header and a
+    // floating glass tab bar, with room at both ends so its start and end can always come clear
+    // of them. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap
+    // near the bottom would then reopen the toolbar instead of reaching the tab bar.
     // --sidebar-width lets panels fixed to the window line up with the main column.
-    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:flex max-md:min-h-0 max-md:flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur max-md:shrink-0">
+    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:min-h-0">
+      <header ref={headerRef} className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] max-md:absolute max-md:inset-x-0">
         <div className="flex h-14 items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {/* The tab bar holds the pages on phones, so this corner only needs a way out. */}
             <LogoutButton iconOnly className="md:hidden" />
             <Button variant="ghost" size="icon" className="max-md:hidden" aria-label={sidebarShown ? t('Hide sidebar') : t('Show sidebar')} aria-pressed={!sidebarShown} title={sidebarShown ? t('Hide sidebar') : t('Show sidebar')} onClick={toggleSidebar}>
@@ -117,8 +108,8 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
             </Button>
             <h1 className="brand-title text-xl sm:text-2xl">{t('qBittorrent')}</h1>
           </div>
-          <div className="flex items-center gap-1 sm:gap-3">
-            <Speeds />
+          <div className="flex items-center gap-2">
+            <GlobalSpeeds />
             {/* Last, so it stays put at the right edge whatever the speeds read. */}
             <SpeedLimitToggle />
           </div>
@@ -126,7 +117,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
         <ConnectionBanner />
       </header>
 
-      <div ref={scroller} className="max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-x-none max-md:overscroll-y-contain">
+      <div ref={scroller} className="max-md:absolute max-md:inset-0 max-md:overflow-y-auto max-md:overscroll-x-none max-md:overscroll-y-contain">
         <div className="flex">
           {sidebarShown && (
             <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 flex-shrink-0 flex-col gap-1 self-start overflow-y-auto border-e p-2 pb-4 md:flex">
@@ -134,7 +125,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
               <LogoutButton className="mt-auto" />
             </aside>
           )}
-          <main className="min-w-0 flex-1 pt-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-4">
+          <main className="min-w-0 flex-1 pt-4 pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] max-md:pt-[calc(var(--header-height,3.5rem)+1rem)] max-md:pb-[calc(var(--bottom-nav-height,5rem)+1rem)]">
             {children}
           </main>
         </div>
@@ -142,10 +133,15 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
 
       <DropOverlay />
 
-      <nav ref={bottomBar} aria-label={t('Pages')} className="z-30 shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:hidden">
-        <div className="flex justify-around px-1 py-2">
+      {/* Phones: a floating glass capsule, clear of the screen's edges and the home indicator. */}
+      <nav
+        ref={navRef}
+        aria-label={t('Pages')}
+        className="glass fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 rounded-full md:hidden"
+      >
+        <div className="flex justify-around px-1 py-1.5">
           {PAGES.map(({ id, label, icon: Icon }) => (
-            <button key={id} type="button" aria-current={page === id ? 'page' : undefined} onClick={() => onNavigate(id)} className={cn('flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-1 py-1', page === id ? 'text-primary' : 'text-muted-foreground')}>
+            <button key={id} type="button" aria-current={page === id ? 'page' : undefined} onClick={() => onNavigate(id)} className={cn('flex min-w-0 flex-1 flex-col items-center rounded-full px-1 py-1 transition-colors', page === id ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground')}>
               <Icon className="h-5 w-5" />
               <span className="text-[10px]">{label}</span>
             </button>

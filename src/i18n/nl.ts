@@ -809,7 +809,7 @@ const nl: Record<string, string> = {
   'Upload limit': 'Uploadlimiet',
   'Write cache overload': 'Schrijfcache-overbelasting',
   'qBittorrent has no network connection': 'qBittorrent heeft geen netwerkverbinding',
-  'Drag to resize. Double-click to reset.': 'Sleep om de breedte te wijzigen. Dubbelklik om te herstellen.',
+  'Drag to resize. Double-click to fit the content.': 'Sleep om de breedte te wijzigen. Dubbelklik om aan de inhoud aan te passen.',
   'Resize {label}': 'Breedte van {label} wijzigen',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': 'Sorteren op {label}. Sleep om te verplaatsen, of druk op Alt en een pijltoets.',
   'Card view': 'Kaartweergave',
@@ -1258,6 +1258,15 @@ const nl: Record<string, string> = {
   'Peer ID client': 'Peer-ID client',
   'Files': 'Bestanden',
   'Popularity': 'Populariteit',
+  'Set global speed limits': 'Globale snelheidslimieten instellen',
+  'Global speed limits': 'Globale snelheidslimieten',
+  'The alternative speed limits are on, so these change them.': 'De alternatieve snelheidslimieten staan aan, dus je wijzigt die.',
+  'For all torrents together.': 'Voor alle torrents samen.',
+  'Last checked {time}': 'Laatst gecontroleerd: {time}',
+  'Make the details smaller': 'Details kleiner maken',
+  'Make the details larger': 'Details groter maken',
+  'Show more': 'Meer tonen',
+  'Show less': 'Minder tonen',
 }
 
 export default nl

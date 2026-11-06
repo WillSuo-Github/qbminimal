@@ -247,7 +247,7 @@ export function TorrentsView() {
         <div
           role="toolbar"
           aria-label={t('Selected torrents')}
-          className="z-30 flex items-center gap-1 overflow-x-auto rounded-lg border bg-background/90 p-1.5 shadow-sm backdrop-blur max-md:fixed max-md:inset-x-2 max-md:bottom-[calc(var(--bottom-nav-height,4rem)+var(--table-scrollbar-space,0px)+0.5rem)] md:sticky md:top-16"
+          className="glass z-30 flex items-center gap-1 overflow-x-auto p-1.5 max-md:fixed max-md:inset-x-3 max-md:bottom-[calc(var(--bottom-nav-height,4rem)+var(--table-scrollbar-space,0px)+0.5rem)] max-md:rounded-full max-md:px-2 md:sticky md:top-16 md:rounded-xl"
         >
           <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('Clear selection')} title={t('Clear selection (Esc)')} onClick={selection.clear}>
             <X className="h-4 w-4" />

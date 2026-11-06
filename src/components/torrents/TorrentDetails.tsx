@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog as DialogPrimitive } from 'radix-ui'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useBackButtonClose } from '@/hooks/useBackButtonClose'
 import { readStored, writeStored } from '@/lib/storage'
@@ -143,17 +143,85 @@ export function TorrentDetailsPanel({ torrent, onClose }: DetailsProps) {
   )
 }
 
-// Phones: a dialog over the list, which the back button closes too.
+// Phones: a sheet from the bottom, as in iOS. It opens at medium height, floating clear of the
+// screen's edges; dragging its handle up, or tapping it, gives the whole screen, and dragging down
+// steps back or closes it. The back button and Esc close it too.
+type Detent = 'medium' | 'large'
+const DISMISS_DISTANCE = 90
+const FLICK_SPEED = 0.6 // px per ms
+
 export function TorrentDetailsDialog({ torrent, onClose }: DetailsProps) {
   useBackButtonClose(onClose)
+  const [detent, setDetent] = useState<Detent>('medium')
+  const [offset, setOffset] = useState<number | null>(null)
+  const drag = useRef<{ y: number; time: number } | null>(null)
+
+  const startDrag = (e: PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId)
+    drag.current = { y: e.clientY, time: e.timeStamp }
+    setOffset(0)
+  }
+  const moveDrag = (e: PointerEvent<HTMLButtonElement>) => {
+    if (drag.current) setOffset(e.clientY - drag.current.y)
+  }
+  const endDrag = (e: PointerEvent<HTMLButtonElement>) => {
+    const start = drag.current
+    drag.current = null
+    setOffset(null)
+    if (!start) return
+    const distance = e.clientY - start.y
+    const speed = distance / Math.max(e.timeStamp - start.time, 1)
+    // A tap toggles between the heights, for anyone who doesn't drag.
+    if (Math.abs(distance) < 6) setDetent(detent === 'medium' ? 'large' : 'medium')
+    else if (distance < -40 || speed < -FLICK_SPEED) setDetent('large')
+    else if (distance > DISMISS_DISTANCE || speed > FLICK_SPEED) {
+      if (detent === 'large' && distance < window.innerHeight * 0.45) setDetent('medium')
+      else onClose()
+    }
+  }
+
+  const large = detent === 'large'
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="truncate pe-6" title={torrent.name}>{torrent.name}</DialogTitle>
-        </DialogHeader>
-        <DetailsTabs torrent={torrent} listClassName="w-full" />
-      </DialogContent>
-    </Dialog>
+    <DialogPrimitive.Root open onOpenChange={(open) => !open && onClose()}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          data-keeps-swipes
+          className={cn(
+            'fixed z-50 flex flex-col overflow-hidden border bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom',
+            large
+              ? 'inset-x-0 bottom-0 h-[calc(100dvh-env(safe-area-inset-top)-0.5rem)] rounded-t-[1.75rem] border-b-0 pb-[env(safe-area-inset-bottom)]'
+              : 'inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] h-[62dvh] rounded-[2rem]',
+            offset === null && 'transition-[height,inset,border-radius,translate] duration-300 ease-out',
+          )}
+          // Following the finger, a little stiffer upwards.
+          style={offset === null ? undefined : { translate: `0 ${offset > 0 ? offset : offset / 3}px` }}
+        >
+          <button
+            type="button"
+            aria-label={large ? t('Make the details smaller') : t('Make the details larger')}
+            onPointerDown={startDrag}
+            onPointerMove={moveDrag}
+            onPointerUp={endDrag}
+            onPointerCancel={() => { drag.current = null; setOffset(null) }}
+            className="flex h-6 w-full flex-shrink-0 cursor-grab touch-none items-center justify-center outline-none active:cursor-grabbing focus-visible:[&>span]:bg-primary"
+          >
+            <span className="h-1.5 w-10 rounded-full bg-muted-foreground/40" />
+          </button>
+          <div className="flex min-h-0 flex-1 flex-col gap-2 px-4 pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <DialogPrimitive.Title className="truncate text-base font-semibold" title={torrent.name}>{torrent.name}</DialogPrimitive.Title>
+              <DialogPrimitive.Close asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 rounded-full bg-muted" aria-label={t('Close details')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogPrimitive.Close>
+            </div>
+            <DetailsTabs torrent={torrent} listClassName="w-full" />
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   )
 }

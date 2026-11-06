@@ -45,6 +45,10 @@ describe('column layout', () => {
     expect(shiftColumn(DEFAULT_COLUMN_LAYOUT, 'priority', -1)).toBe(DEFAULT_COLUMN_LAYOUT)
   })
 
+  it('keeps dates whole, even with a narrower saved width', () => {
+    expect(parseColumnLayout(JSON.stringify({ version: 2, order: [...COLUMN_IDS], hidden: [], widths: { added_on: 144 } })).widths.added_on).toBe(152)
+  })
+
   it('keeps widths within limits', () => {
     expect(resizeColumn(DEFAULT_COLUMN_LAYOUT, 'size', 10).widths.size).toBe(48)
     expect(resizeColumn(DEFAULT_COLUMN_LAYOUT, 'size', 5000).widths.size).toBe(1200)

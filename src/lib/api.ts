@@ -166,6 +166,9 @@ export class QbitClient {
 
   getMainData = (rid: number) => this.get<MainDataUpdate>('sync/maindata', { rid })
   toggleSpeedLimitsMode = () => this.post('transfer/toggleSpeedLimitsMode')
+  // The global limits in bytes per second, 0 for none. While the alternative limits are on, these set those.
+  setGlobalDownloadLimit = (limit: number) => this.post('transfer/setDownloadLimit', { limit })
+  setGlobalUploadLimit = (limit: number) => this.post('transfer/setUploadLimit', { limit })
   // Web API 2.16.2 and newer. Stops every transfer but keeps each torrent's own state.
   pauseSession = () => this.post('transfer/pauseSession')
   resumeSession = () => this.post('transfer/resumeSession')

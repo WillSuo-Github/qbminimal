@@ -12,6 +12,9 @@ if (magnet) {
   window.history.replaceState(null, '', window.location.pathname)
 }
 
+// Safari 17.4 and newer have a native iOS switch; elsewhere index.css draws one.
+if ('switch' in HTMLInputElement.prototype) document.documentElement.classList.add('native-switch')
+
 const root = document.getElementById('root')
 if (!root) throw new Error('index.html needs a #root element')
 

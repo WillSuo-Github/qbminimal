@@ -8,6 +8,7 @@ import { DOWN_SPEED_COLOR, formatEta, getStateBadge, getStateLabel, ratioColor, 
 import type { SortDirection } from '@/lib/listSettings'
 import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
+import { useTransferInfo } from '@/hooks/useApi'
 import { BottomScrollbar } from './BottomScrollbar'
 import { t } from '@/i18n'
 
@@ -93,11 +94,29 @@ interface TorrentTableProps {
   wrapBody: (body: ReactElement) => ReactNode
 }
 
+// The width that shows every given cell's content whole: each is copied, unclipped, into a hidden
+// box beside the table, which keeps the table's fonts.
+function naturalWidth(cells: Element[], host: HTMLElement): number {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:absolute;top:0;left:0;visibility:hidden;pointer-events:none;width:max-content;white-space:nowrap'
+  host.appendChild(probe)
+  let widest = 0
+  for (const cell of cells) {
+    probe.className = cell.className
+    probe.innerHTML = cell.innerHTML
+    widest = Math.max(widest, probe.getBoundingClientRect().width)
+  }
+  probe.remove()
+  return Math.ceil(widest)
+}
+
 // A table whose columns can be dragged to a new place, resized from their right edge, sorted by
 // clicking, and shown or hidden from the Columns menu. Alt + arrow keys on a header move it too.
 // Clicking a row selects it and opens its details; Ctrl or Cmd adds to the selection, Shift a range.
 export function TorrentTable({ torrents, layout, onLayoutChange, selected, selectAllState, onToggle, onSelectAll, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
-  const columns = visibleColumns(layout)
+  const { data: serverState } = useTransferInfo()
+  // qBittorrent hides its # column while queueing is off, when every torrent would show *.
+  const columns = visibleColumns(layout).filter(def => def.id !== 'priority' || serverState?.queueing !== false)
   const [resizing, setResizing] = useState<{ id: ColumnId; width: number } | null>(null)
   // sign is -1 right to left, where a column's resizing edge is on its left.
   const resizeStart = useRef<{ x: number; width: number; sign: number } | null>(null)
@@ -125,11 +144,17 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
     resizeStart.current = null
     setResizing(null)
   }
-  // Double-clicking the edge puts the column back to its usual width.
-  const resetWidth = (id: ColumnId) => {
-    const widths = { ...layout.widths }
-    delete widths[id]
-    onLayoutChange({ ...layout, widths })
+  // Double-clicking the edge fits the column to its widest value on this page, and to its header.
+  const fitWidth = (id: ColumnId) => {
+    const host = scroller.current
+    const index = columns.findIndex(def => def.id === id)
+    if (!host || index === -1) return
+    // The first cell of each row is the checkbox.
+    const cells = [...host.querySelectorAll('tbody tr')].map(row => row.children[index + 1]).filter(Boolean)
+    const header = host.querySelectorAll('thead th')[index + 1]
+    // Room for the sort arrow, so sorting by the column later doesn't cut its header.
+    const headerWidth = header ? naturalWidth([header], host) + 18 : 0
+    onLayoutChange(resizeColumn(layout, id, Math.max(naturalWidth(cells, host), headerWidth) + 1))
   }
 
   const onDragStart = (e: DragEvent<HTMLTableCellElement>, id: ColumnId) => {
@@ -214,12 +239,12 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
                     role="separator"
                     aria-orientation="vertical"
                     aria-label={t('Resize {label}', { label: def.label })}
-                    title={t('Drag to resize. Double-click to reset.')}
+                    title={t('Drag to resize. Double-click to fit the content.')}
                     onPointerDown={(e) => startResize(e, def.id)}
                     onPointerMove={(e) => moveResize(e, def.id)}
                     onPointerUp={endResize}
                     onPointerCancel={endResize}
-                    onDoubleClick={() => resetWidth(def.id)}
+                    onDoubleClick={() => fitWidth(def.id)}
                     className="group absolute end-0 top-0 flex h-full w-2 cursor-col-resize touch-none justify-end"
                   >
                     <span className={cn('h-full w-px', resizing?.id === def.id ? 'bg-primary' : 'bg-border group-hover:bg-primary/60')} />

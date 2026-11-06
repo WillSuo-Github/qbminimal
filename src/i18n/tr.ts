@@ -809,7 +809,7 @@ const tr: Record<string, string> = {
   'Upload limit': 'Gönderme sınırı',
   'Write cache overload': 'Yazma önbelleği aşırı yükü',
   'qBittorrent has no network connection': 'qBittorrent\'in ağ bağlantısı yok',
-  'Drag to resize. Double-click to reset.': 'Boyutlandırmak için sürükleyin. Sıfırlamak için çift tıklayın.',
+  'Drag to resize. Double-click to fit the content.': 'Boyutlandırmak için sürükleyin. İçeriğe sığdırmak için çift tıklayın.',
   'Resize {label}': 'Boyutlandır: {label}',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': 'Sırala: {label}. Taşımak için sürükleyin veya Alt ile bir ok tuşuna basın.',
   'Card view': 'Kart görünümü',
@@ -1258,6 +1258,15 @@ const tr: Record<string, string> = {
   'Peer ID client': 'Kişi Kimliği İstemcisi',
   'Files': 'Dosyalar',
   'Popularity': 'Yaygınlık',
+  'Set global speed limits': 'Genel hız sınırlarını ayarla',
+  'Global speed limits': 'Genel hız sınırları',
+  'The alternative speed limits are on, so these change them.': 'Alternatif hız sınırları açık, bu yüzden onlar değişir.',
+  'For all torrents together.': 'Tüm torrentler için toplam.',
+  'Last checked {time}': 'Son denetim: {time}',
+  'Make the details smaller': 'Ayrıntıları küçült',
+  'Make the details larger': 'Ayrıntıları büyüt',
+  'Show more': 'Daha fazla göster',
+  'Show less': 'Daha az göster',
 }
 
 export default tr

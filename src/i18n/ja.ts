@@ -809,7 +809,7 @@ const ja: Record<string, string> = {
   'Upload limit': 'アップロード制限',
   'Write cache overload': '書き込みキャッシュの過負荷',
   'qBittorrent has no network connection': 'qBittorrent はネットワークに接続されていません',
-  'Drag to resize. Double-click to reset.': 'ドラッグで幅を変更、ダブルクリックでリセットします。',
+  'Drag to resize. Double-click to fit the content.': 'ドラッグで幅を変更、ダブルクリックで内容に合わせます。',
   'Resize {label}': '{label} の幅を変更',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': '{label} で並べ替えます。ドラッグするか、Alt と矢印キーを押すと移動できます。',
   'Card view': 'カード表示',
@@ -1258,6 +1258,15 @@ const ja: Record<string, string> = {
   'Peer ID client': 'クライアントのピアID',
   'Files': 'ファイル',
   'Popularity': '人気',
+  'Set global speed limits': '全体の速度制限を設定',
+  'Global speed limits': '全体の速度制限',
+  'The alternative speed limits are on, so these change them.': '代替速度制限がオンなので、こちらが変更されます。',
+  'For all torrents together.': 'すべてのトレントの合計。',
+  'Last checked {time}': '最終確認: {time}',
+  'Make the details smaller': '詳細を小さくする',
+  'Make the details larger': '詳細を大きくする',
+  'Show more': '詳しく表示',
+  'Show less': '表示を減らす',
 }
 
 export default ja

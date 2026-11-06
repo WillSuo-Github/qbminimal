@@ -93,7 +93,7 @@ function AppSection() {
               </div>
             ))}
           </dl>
-          <UpdateCheck qbittorrentVersion={qbittorrentVersion} />
+          <UpdateCheck />
         </CardContent>
       </Card>
 
@@ -164,7 +164,7 @@ function PreferencesSection({ sectionId, edits, setEdits }: { sectionId: string;
       ))}
 
       {(changeCount > 0 || invalid.length > 0) && (
-        <div className="sticky bottom-2 z-10 flex items-center justify-between gap-2 rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur">
+        <div className="glass sticky bottom-2 z-10 flex items-center justify-between gap-2 rounded-2xl p-3 max-md:bottom-[calc(var(--bottom-nav-height,5rem)+0.5rem)]">
           <span className="text-sm">{changeCount === 1 ? t('1 unsaved change') : t('{changeCount} unsaved changes', { changeCount })}</span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setEdits(() => ({}))}>{t('Discard')}</Button>

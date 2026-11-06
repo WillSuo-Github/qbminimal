@@ -809,7 +809,7 @@ const zhHans: Record<string, string> = {
   'Upload limit': '上传限制',
   'Write cache overload': '写入缓存超载',
   'qBittorrent has no network connection': 'qBittorrent 没有网络连接',
-  'Drag to resize. Double-click to reset.': '拖动以调整大小。双击以重置。',
+  'Drag to resize. Double-click to fit the content.': '拖动以调整大小。双击以适应内容。',
   'Resize {label}': '调整 {label} 的宽度',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': '按{label}排序。拖动以移动，或按 Alt 和方向键。',
   'Card view': '卡片视图',
@@ -1258,6 +1258,15 @@ const zhHans: Record<string, string> = {
   'Peer ID client': '对等节点 ID 客户端',
   'Files': '文件',
   'Popularity': '流行度',
+  'Set global speed limits': '设置全局速度限制',
+  'Global speed limits': '全局速度限制',
+  'The alternative speed limits are on, so these change them.': '备用速度限制已开启，因此将修改备用限制。',
+  'For all torrents together.': '所有 Torrent 合计。',
+  'Last checked {time}': '上次检查：{time}',
+  'Make the details smaller': '缩小详情',
+  'Make the details larger': '放大详情',
+  'Show more': '显示更多',
+  'Show less': '显示更少',
 }
 
 export default zhHans

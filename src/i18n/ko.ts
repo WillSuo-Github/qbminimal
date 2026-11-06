@@ -809,7 +809,7 @@ const ko: Record<string, string> = {
   'Upload limit': '업로드 제한',
   'Write cache overload': '쓰기 캐시 과부하',
   'qBittorrent has no network connection': 'qBittorrent가 네트워크에 연결되어 있지 않습니다',
-  'Drag to resize. Double-click to reset.': '끌어서 크기를 조절하고, 두 번 클릭하면 초기화됩니다.',
+  'Drag to resize. Double-click to fit the content.': '끌어서 크기를 조절하고, 두 번 클릭하면 내용에 맞춥니다.',
   'Resize {label}': '{label} 크기 조절',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': '{label}(으)로 정렬합니다. 끌어서 옮기거나 Alt와 화살표 키를 누르세요.',
   'Card view': '카드 보기',
@@ -1258,6 +1258,15 @@ const ko: Record<string, string> = {
   'Peer ID client': '피어 ID 클라이언트',
   'Files': '파일',
   'Popularity': '인지도',
+  'Set global speed limits': '전체 속도 제한 설정',
+  'Global speed limits': '전체 속도 제한',
+  'The alternative speed limits are on, so these change them.': '대체 속도 제한이 켜져 있어 이 값이 바뀝니다.',
+  'For all torrents together.': '모든 토렌트 합계입니다.',
+  'Last checked {time}': '마지막 확인: {time}',
+  'Make the details smaller': '세부 정보 줄이기',
+  'Make the details larger': '세부 정보 키우기',
+  'Show more': '더 보기',
+  'Show less': '간단히 보기',
 }
 
 export default ko

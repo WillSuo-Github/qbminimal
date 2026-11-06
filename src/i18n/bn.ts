@@ -809,7 +809,7 @@ const bn: Record<string, string> = {
   'Upload limit': 'আপলোড সীমা',
   'Write cache overload': 'রাইট ক্যাশ ওভারলোড',
   'qBittorrent has no network connection': 'qBittorrent-এর কোনো নেটওয়ার্ক সংযোগ নেই',
-  'Drag to resize. Double-click to reset.': 'আকার বদলাতে টানুন। আগের অবস্থায় ফেরাতে ডাবল-ক্লিক করুন।',
+  'Drag to resize. Double-click to fit the content.': 'আকার বদলাতে টানুন। বিষয়বস্তু অনুযায়ী মানাতে ডাবল-ক্লিক করুন।',
   'Resize {label}': '{label}-এর আকার বদলান',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': '{label} অনুযায়ী সাজান। সরাতে টানুন, অথবা Alt ও একটি অ্যারো কী চাপুন।',
   'Card view': 'কার্ড ভিউ',
@@ -1258,6 +1258,15 @@ const bn: Record<string, string> = {
   'Peer ID client': 'পিয়ার আইডি ক্লায়েন্ট',
   'Files': 'ফাইল',
   'Popularity': 'জনপ্রিয়তা',
+  'Set global speed limits': 'সামগ্রিক গতিসীমা ঠিক করুন',
+  'Global speed limits': 'সামগ্রিক গতিসীমা',
+  'The alternative speed limits are on, so these change them.': 'বিকল্প গতিসীমা চালু আছে, তাই এগুলোই বদলাবে।',
+  'For all torrents together.': 'সব টরেন্ট মিলিয়ে।',
+  'Last checked {time}': 'শেষ যাচাই: {time}',
+  'Make the details smaller': 'বিস্তারিত ছোট করুন',
+  'Make the details larger': 'বিস্তারিত বড় করুন',
+  'Show more': 'আরও দেখুন',
+  'Show less': 'কম দেখুন',
 }
 
 export default bn

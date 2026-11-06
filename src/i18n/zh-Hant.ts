@@ -809,7 +809,7 @@ const zhHant: Record<string, string> = {
   'Upload limit': '上傳限制',
   'Write cache overload': '寫入快取超過負荷',
   'qBittorrent has no network connection': 'qBittorrent 沒有網路連線',
-  'Drag to resize. Double-click to reset.': '拖曳以調整寬度。按兩下可重設。',
+  'Drag to resize. Double-click to fit the content.': '拖曳以調整寬度。按兩下以符合內容。',
   'Resize {label}': '調整 {label} 的寬度',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': '依 {label} 排序。拖曳以移動，或按 Alt 加方向鍵。',
   'Card view': '卡片檢視',
@@ -1258,6 +1258,15 @@ const zhHant: Record<string, string> = {
   'Peer ID client': 'Peer ID 用戶端',
   'Files': '檔案',
   'Popularity': '人氣',
+  'Set global speed limits': '設定全域速率限制',
+  'Global speed limits': '全域速率限制',
+  'The alternative speed limits are on, so these change them.': '替代速率限制已開啟，因此會變更替代限制。',
+  'For all torrents together.': '所有 Torrent 合計。',
+  'Last checked {time}': '上次檢查：{time}',
+  'Make the details smaller': '縮小詳細資料',
+  'Make the details larger': '放大詳細資料',
+  'Show more': '顯示更多',
+  'Show less': '顯示較少',
 }
 
 export default zhHant

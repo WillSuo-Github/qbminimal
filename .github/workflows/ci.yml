@@ -21,3 +21,51 @@ jobs:
       - run: npm test
       - run: npx tsc -b
       - run: npx vite build --outDir "$RUNNER_TEMP/build"
+
+  # qbminimal against a real qBittorrent: the official container serves the built app as its
+  # alternative Web UI, and a script checks the page and the Web API calls the app depends on.
+  qbittorrent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run release
+      - name: Start qBittorrent with qbminimal
+        run: |
+          profile="$RUNNER_TEMP/qbt"
+          mkdir -p "$profile/qBittorrent/config"
+          # Local requests need no sign-in, and the Web UI is qbminimal from release/public.
+          cat > "$profile/qBittorrent/config/qBittorrent.conf" <<'CONF'
+          [LegalNotice]
+          Accepted=true
+
+          [Preferences]
+          WebUI\LocalHostAuth=false
+          WebUI\Port=8080
+          WebUI\AlternativeUIEnabled=true
+          WebUI\RootFolder=/qbminimal
+          CONF
+          docker run -d --name qbt --network host \
+            -e QBT_LEGAL_NOTICE=confirm -e QBT_WEBUI_PORT=8080 -e PUID="$(id -u)" -e PGID="$(id -g)" \
+            -v "$profile:/config" -v "$GITHUB_WORKSPACE/release:/qbminimal:ro" \
+            qbittorrentofficial/qbittorrent-nox:latest
+          for attempt in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8080/api/v2/app/version && break
+            sleep 2
+          done
+      - name: Check qbminimal against qBittorrent
+        run: |
+          # If the container still asks for a password, it prints a temporary one for admin.
+          password="$(docker logs qbt 2>&1 | sed -n 's/.*temporary password is provided for this session: //p' | tail -1)"
+          if curl -sf http://127.0.0.1:8080/api/v2/app/version > /dev/null; then
+            node scripts/qbittorrent-smoke.mjs http://127.0.0.1:8080
+          else
+            node scripts/qbittorrent-smoke.mjs http://127.0.0.1:8080 admin "$password"
+          fi
+      - name: qBittorrent's log
+        if: failure()
+        run: docker logs qbt 2>&1 | tail -50

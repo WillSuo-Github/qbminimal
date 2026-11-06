@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { FolderOpen } from 'lucide-react'
 import { BannedPeers } from '@/components/BannedPeers'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { PrefDef } from '@/lib/preferences'
@@ -29,12 +29,13 @@ export function PreferenceField({ def, value, getValue, onChange, disabled, hasU
 
   if (def.type === 'bool') {
     return (
-      <div className={`flex items-start gap-2 ${disabled ? 'opacity-50' : ''}`}>
-        <Checkbox id={id} className="mt-0.5" checked={!!value} disabled={disabled} onCheckedChange={(checked) => onChange(!!checked)} />
+      // An iOS-style switch at the end of the row, as in Apple's Settings.
+      <div className={`flex items-start justify-between gap-3 ${disabled ? 'opacity-50' : ''}`}>
         <div className="space-y-0.5">
           <Label htmlFor={id} className="text-sm font-normal">{def.label}</Label>
           {help}
         </div>
+        <Switch id={id} checked={!!value} disabled={disabled} onCheckedChange={onChange} />
       </div>
     )
   }

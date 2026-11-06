@@ -809,7 +809,7 @@ const ar: Record<string, string> = {
   'Upload limit': 'حد الرفع',
   'Write cache overload': 'حمل زائد على ذاكرة الكتابة المؤقتة',
   'qBittorrent has no network connection': 'لا يوجد لدى qBittorrent اتصال بالشبكة',
-  'Drag to resize. Double-click to reset.': 'اسحب لتغيير الحجم. انقر نقرًا مزدوجًا لإعادة التعيين.',
+  'Drag to resize. Double-click to fit the content.': 'اسحب لتغيير الحجم. انقر نقرًا مزدوجًا لملاءمة المحتوى.',
   'Resize {label}': 'تغيير عرض {label}',
   'Sort by {label}. Drag to move, or press Alt and an arrow key.': 'الترتيب حسب {label}. اسحب للنقل، أو اضغط Alt ومفتاح سهم.',
   'Card view': 'عرض البطاقات',
@@ -1258,6 +1258,15 @@ const ar: Record<string, string> = {
   'Peer ID client': 'عميل معرف النظير',
   'Files': 'الملفات',
   'Popularity': 'الشعبية',
+  'Set global speed limits': 'تعيين حدود السرعة العامة',
+  'Global speed limits': 'حدود السرعة العامة',
+  'The alternative speed limits are on, so these change them.': 'حدود السرعة البديلة مفعّلة، لذا ستغيّر هذه الحدود.',
+  'For all torrents together.': 'لكل التورنتات معًا.',
+  'Last checked {time}': 'آخر تحقق: {time}',
+  'Make the details smaller': 'تصغير التفاصيل',
+  'Make the details larger': 'تكبير التفاصيل',
+  'Show more': 'عرض المزيد',
+  'Show less': 'عرض أقل',
 }
 
 export default ar
