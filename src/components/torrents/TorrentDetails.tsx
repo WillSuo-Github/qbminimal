@@ -109,6 +109,7 @@ export function TorrentDetailsPanel({ torrent, onClose }: DetailsProps) {
       <div aria-hidden style={{ height }} />
       <section
         aria-label={t('Torrent details')}
+        data-keeps-swipes
         className="fixed right-0 bottom-0 z-30 flex flex-col border-t bg-card shadow-[0_-6px_16px_-8px_rgb(0_0_0/0.15)]"
         style={{ height, left: 'var(--sidebar-width, 0px)' }}
       >

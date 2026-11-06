@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { columnWidth, getColumn, moveColumn, resizeColumn, shiftColumn, trackerHost, visibleColumns, type ColumnId, type ColumnLayout } from '@/lib/torrentColumns'
-import { formatEta, getStateBadge, getStateLabel, ratioColor } from '@/lib/torrentState'
+import { formatEta, getStateBadge, getStateLabel, ratioColor, peerPair as pair } from '@/lib/torrentState'
 import type { SortDirection } from '@/lib/listSettings'
 import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
@@ -20,7 +20,6 @@ const PINNED_SELECTED = 'bg-muted group-hover:bg-muted'
 // Download green and upload blue, as in the header.
 const speed = (bytes: number, color: string) => (bytes > 0 ? <span className={color}>{formatBytes(bytes)}/s</span> : <span className="text-muted-foreground/60">-</span>)
 const limit = (bytes: number) => (bytes > 0 ? `${formatBytes(bytes)}/s` : '∞')
-const pair = (connected: number, total: number) => `${Math.max(connected, 0)} (${Math.max(total, 0)})`
 
 function Cell({ torrent, id }: { torrent: Torrent; id: ColumnId }): ReactNode {
   switch (id) {

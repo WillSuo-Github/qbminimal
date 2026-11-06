@@ -56,12 +56,10 @@ const de: Record<string, string> = {
   'Drop .torrent files to add them': '.torrent-Dateien hier ablegen, um sie hinzuzufügen',
   'Only .torrent files can be added': 'Nur .torrent-Dateien können hinzugefügt werden',
   'You can choose options before they\'re added': 'Vor dem Hinzufügen kannst du Optionen wählen',
-  'Close menu': 'Menü schließen',
   'Current speeds': 'Aktuelle Geschwindigkeiten',
   'Hide sidebar': 'Seitenleiste ausblenden',
   'Logging out...': 'Melde ab...',
   'Logout': 'Abmelden',
-  'Open menu': 'Menü öffnen',
   'Pages': 'Seiten',
   'Show sidebar': 'Seitenleiste einblenden',
   'qBittorrent': 'qBittorrent',
@@ -1246,6 +1244,7 @@ const de: Record<string, string> = {
   'Errored': 'Fehlerhaft',
   'Seeding': 'Seedet',
   'Stopped': 'Gestoppt',
+  'unlimited': 'unbegrenzt',
 }
 
 export default de

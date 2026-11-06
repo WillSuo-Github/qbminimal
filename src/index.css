@@ -82,6 +82,13 @@
     @apply border-border outline-ring/50;
   }
 
+  /* A sideways swipe at the end of something scrolled stays on the page, rather than going
+     back or forward in the browser's history. */
+  html,
+  body {
+    overscroll-behavior-x: none;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -108,4 +115,13 @@
   font-weight: 400;
   white-space: nowrap;
   text-box: trim-both cap alphabetic;
+}
+
+/* Browsers without text-box trimming: a line as tall as the capitals, nudged so they sit in
+   its middle, which keeps the title centred beside the header's buttons. */
+@supports not (text-box: trim-both cap alphabetic) {
+  .brand-title {
+    line-height: 0.7;
+    translate: 0 -0.04em;
+  }
 }

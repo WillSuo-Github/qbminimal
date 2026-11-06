@@ -11,7 +11,7 @@ import { t } from '@/i18n'
 
 const formatRate = (bytesPerSecond: unknown) => {
   const value = Number(bytesPerSecond)
-  return value > 0 ? `${formatBytes(value)}/s` : 'unlimited'
+  return value > 0 ? `${formatBytes(value)}/s` : t('unlimited')
 }
 
 // Switches qBittorrent between its normal and alternative ("slow") speed limits.

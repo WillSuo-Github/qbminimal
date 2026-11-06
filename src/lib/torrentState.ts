@@ -84,3 +84,6 @@ export function ratioColor(ratio: number): string {
   if (ratio < 5) return 'text-green-600 dark:text-green-400'
   return 'text-sky-600 dark:text-sky-400'
 }
+
+// Seeds or peers as "connected (in the swarm)", the way qBittorrent shows them.
+export const peerPair = (connected: number, total: number) => `${Math.max(connected, 0)} (${Math.max(total, 0)})`

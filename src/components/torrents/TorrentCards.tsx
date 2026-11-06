@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes } from '@/lib/format'
-import { formatEta, getStateColor, getStateLabel } from '@/lib/torrentState'
+import { formatEta, getStateColor, getStateLabel, peerPair as pair } from '@/lib/torrentState'
 import { cn } from '@/lib/utils'
 import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
@@ -56,6 +56,9 @@ export function TorrentCards({ torrents, selected, showCheckboxes, onToggle, ope
                 <span className="flex items-center gap-0.5"><ArrowDown className="h-2.5 w-2.5 text-green-500" />{formatBytes(torrent.dlspeed)}/s</span>
                 <span className="flex items-center gap-0.5"><ArrowUp className="h-2.5 w-2.5 text-blue-500" />{formatBytes(torrent.upspeed)}/s</span>
                 <span>{torrent.progress < 1 ? t('ETA {eta}', { eta: formatEta(torrent.eta) }) : t('Ratio {value}', { value: torrent.ratio.toFixed(2) })}</span>
+                {/* Connected, with the swarm's total in brackets, as in the table. One piece, so
+                    it wraps to the next line whole. */}
+                <span>{t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })}</span>
               </div>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-secondary">
                 <div className="h-full bg-primary transition-[width]" style={{ width: `${torrent.progress * 100}%` }} />

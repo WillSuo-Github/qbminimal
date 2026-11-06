@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { DropOverlay } from '@/components/DropOverlay'
@@ -18,37 +18,47 @@ interface LayoutProps {
   children: ReactNode
 }
 
-// Current speeds. Fixed-width digits and a minimum width keep the turtle beside them still.
+// Current speeds: stacked on phones, side by side on wider screens. Fixed-width digits keep
+// them from jumping about as they change.
 function Speeds() {
   const { data: state } = useTransferInfo()
   if (!state) return null
   const row = (arrow: string, color: string, speed = 0) => (
-    <span className="flex min-w-[4.75rem] items-center justify-end gap-1 sm:min-w-[5.75rem]">
+    <span className="flex items-center justify-end gap-1">
       <span className={color}>{arrow}</span>
       {formatBytes(speed)}/s
     </span>
   )
   return (
-    <div className="flex flex-col items-end text-[10px] leading-tight tabular-nums whitespace-nowrap sm:flex-row sm:gap-3 sm:text-xs" aria-label={t('Current speeds')}>
+    <div className="flex flex-col items-end text-[10px] leading-tight tabular-nums whitespace-nowrap sm:flex-row sm:gap-2.5 sm:text-xs" aria-label={t('Current speeds')}>
       {row('↓', 'text-green-500', state.dl_info_speed)}
       {row('↑', 'text-blue-500', state.up_info_speed)}
     </div>
   )
 }
 
-function LogoutButton({ className }: { className?: string }) {
+function LogoutButton({ className, iconOnly = false }: { className?: string; iconOnly?: boolean }) {
   const { signOut } = useSession()
   const [busy, setBusy] = useState(false)
+  const label = busy ? t('Logging out...') : t('Logout')
+  const logOut = () => { setBusy(true); void signOut() }
+  if (iconOnly) {
+    return (
+      <Button variant="ghost" size="icon" className={className} disabled={busy} aria-label={label} title={label} onClick={logOut}>
+        <LogOut className="size-5" />
+      </Button>
+    )
+  }
   return (
-    <Button variant="ghost" className={cn('justify-start gap-2 text-muted-foreground', className)} disabled={busy} onClick={() => { setBusy(true); void signOut() }}>
+    <Button variant="ghost" className={cn('justify-start gap-2 text-muted-foreground', className)} disabled={busy} onClick={logOut}>
       <LogOut className="h-5 w-5" />
-      {busy ? t('Logging out...') : t('Logout')}
+      {label}
     </Button>
   )
 }
 
-// The phone's tab bar covers the bottom of the page, so its real height (which includes the
-// iPhone's home indicator area) is shared as --bottom-nav-height for padding and sticky bars.
+// The phone's tab bar height (which includes the iPhone's home indicator area) is shared as
+// --bottom-nav-height for the bars and panels fixed just above it.
 function useBottomBarHeight() {
   const ref = useRef<HTMLElement>(null)
   useEffect(() => {
@@ -68,7 +78,6 @@ function useBottomBarHeight() {
 const SIDEBAR_KEY = 'qbminimal.sidebar'
 
 export function Layout({ page, onNavigate, children }: LayoutProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
   // Wide screens only: the sidebar can be hidden to give the list the whole width.
   const [sidebarShown, setSidebarShown] = useState(() => readStored(SIDEBAR_KEY) !== 'hidden')
   const toggleSidebar = () => {
@@ -84,32 +93,27 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
     window.scrollTo(0, 0)
   }, [page])
 
-  const go = (id: PageId) => {
-    onNavigate(id)
-    setMenuOpen(false)
-  }
-
   const navButtons = PAGES.map(({ id, label, icon: Icon }) => (
-    <Button key={id} variant={page === id ? 'secondary' : 'ghost'} className="justify-start gap-2" aria-current={page === id ? 'page' : undefined} onClick={() => go(id)}>
+    <Button key={id} variant={page === id ? 'secondary' : 'ghost'} className="justify-start gap-2" aria-current={page === id ? 'page' : undefined} onClick={() => onNavigate(id)}>
       <Icon className="h-5 w-5" />
       {label}
     </Button>
   ))
 
   return (
-    // Below 1200px the page scrolls inside this box, not the window. A scrolling window makes
-    // iPhone Safari collapse its toolbar, and the next tap near the bottom then reopens the
-    // toolbar instead of reaching the tab bar.
+    // Below 1200px the header, the page and the tab bar stack in a box the size of the screen,
+    // and only the page between them scrolls, so the tab bar can never cover its end. A
+    // scrolling window would also make iPhone Safari collapse its toolbar, and the next tap near
+    // the bottom would then reopen the toolbar instead of reaching the tab bar.
     // --sidebar-width lets panels fixed to the window line up with the main column.
-    <div ref={scroller} style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:overflow-y-auto max-md:overscroll-y-contain">
-      <header className="sticky top-0 z-40 border-b bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur">
+    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:flex max-md:min-h-0 max-md:flex-col">
+      <header className="sticky top-0 z-40 border-b bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur max-md:shrink-0">
         <div className="flex h-14 items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="md:hidden" aria-label={menuOpen ? t('Close menu') : t('Open menu')} aria-expanded={menuOpen} onClick={() => setMenuOpen(open => !open)}>
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            {/* The tab bar holds the pages on phones, so this corner only needs a way out. */}
+            <LogoutButton iconOnly className="md:hidden" />
             <Button variant="ghost" size="icon" className="max-md:hidden" aria-label={sidebarShown ? t('Hide sidebar') : t('Show sidebar')} aria-pressed={!sidebarShown} title={sidebarShown ? t('Hide sidebar') : t('Show sidebar')} onClick={toggleSidebar}>
-              {sidebarShown ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+              {sidebarShown ? <PanelLeftClose className="size-5" /> : <PanelLeftOpen className="size-5" />}
             </Button>
             <h1 className="brand-title text-xl sm:text-2xl">{t('qBittorrent')}</h1>
           </div>
@@ -120,33 +124,28 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
           </div>
         </div>
         <ConnectionBanner />
-        {menuOpen && (
-          <nav aria-label={t('Pages')} className="flex flex-col border-t p-2 md:hidden">
-            {navButtons}
-            <div className="my-1 border-t" />
-            <LogoutButton />
-          </nav>
-        )}
       </header>
 
-      <div className="flex">
-        {sidebarShown && (
-          <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 flex-shrink-0 flex-col gap-1 self-start overflow-y-auto border-r p-2 pb-4 md:flex">
-            <nav aria-label={t('Pages')} className="flex flex-col gap-1">{navButtons}</nav>
-            <LogoutButton className="mt-auto" />
-          </aside>
-        )}
-        <main className="min-w-0 flex-1 pt-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[calc(var(--bottom-nav-height,calc(4rem+env(safe-area-inset-bottom)))+1rem)] md:pb-4">
-          {children}
-        </main>
+      <div ref={scroller} className="max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-y-contain">
+        <div className="flex">
+          {sidebarShown && (
+            <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 flex-shrink-0 flex-col gap-1 self-start overflow-y-auto border-r p-2 pb-4 md:flex">
+              <nav aria-label={t('Pages')} className="flex flex-col gap-1">{navButtons}</nav>
+              <LogoutButton className="mt-auto" />
+            </aside>
+          )}
+          <main className="min-w-0 flex-1 pt-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-4">
+            {children}
+          </main>
+        </div>
       </div>
 
       <DropOverlay />
 
-      <nav ref={bottomBar} aria-label={t('Pages')} className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur md:hidden">
+      <nav ref={bottomBar} aria-label={t('Pages')} className="z-30 shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:hidden">
         <div className="flex justify-around px-1 py-2">
           {PAGES.map(({ id, label, icon: Icon }) => (
-            <button key={id} type="button" aria-current={page === id ? 'page' : undefined} onClick={() => go(id)} className={cn('flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-1 py-1', page === id ? 'text-primary' : 'text-muted-foreground')}>
+            <button key={id} type="button" aria-current={page === id ? 'page' : undefined} onClick={() => onNavigate(id)} className={cn('flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md px-1 py-1', page === id ? 'text-primary' : 'text-muted-foreground')}>
               <Icon className="h-5 w-5" />
               <span className="text-[10px]">{label}</span>
             </button>
