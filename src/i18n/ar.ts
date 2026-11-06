@@ -1251,6 +1251,13 @@ const ar: Record<string, string> = {
   'Version {version} is available': 'الإصدار {version} متاح',
   'Couldn\'t check for updates': 'تعذّر التحقق من التحديثات',
   'Asks GitHub for the latest releases.': 'يسأل GitHub عن أحدث الإصدارات.',
+  'Port': 'المنفذ',
+  'Flags': 'العلامات',
+  'Relevance': 'الصلة',
+  'Client': 'العميل',
+  'Peer ID client': 'عميل معرف النظير',
+  'Files': 'الملفات',
+  'Popularity': 'الشعبية',
 }
 
 export default ar

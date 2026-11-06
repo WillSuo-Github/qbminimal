@@ -18,15 +18,15 @@ interface LayoutProps {
   children: ReactNode
 }
 
-// Current speeds: stacked on phones, side by side on wider screens. Fixed-width digits keep
-// them from jumping about as they change.
+// Current speeds: stacked on phones, side by side on wider screens. Each number sits by its arrow
+// in room for the longest value ("1023.9 KB/s"), so neither arrow moves as the numbers change.
 function Speeds() {
   const { data: speeds } = useTotalSpeeds()
   if (!speeds) return null
   const row = (arrow: string, color: string, speed = 0) => (
-    <span className="flex items-center justify-end gap-1">
+    <span className="flex items-center gap-1">
       <span className={color}>{arrow}</span>
-      {formatBytes(speed)}/s
+      <span className="w-[11ch]">{formatBytes(speed)}/s</span>
     </span>
   )
   return (

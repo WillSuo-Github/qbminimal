@@ -5,15 +5,17 @@ import { t } from '@/i18n'
 // The torrent table's columns. Each can be shown or hidden, dragged to a new place, and resized,
 // and the layout is kept per device.
 export const COLUMN_IDS = [
-  'name', 'size', 'progress', 'state', 'num_seeds', 'num_leechs', 'dlspeed', 'upspeed', 'eta', 'ratio',
-  'category', 'tags', 'added_on', 'completion_on', 'tracker', 'downloaded', 'uploaded', 'amount_left',
-  'time_active', 'seeding_time', 'last_activity', 'availability', 'priority', 'dl_limit', 'up_limit', 'save_path',
+  'priority', 'name', 'size', 'progress', 'state', 'num_seeds', 'num_leechs', 'dlspeed', 'upspeed', 'eta', 'ratio',
+  'popularity', 'category', 'tags', 'added_on', 'completion_on', 'tracker', 'downloaded', 'uploaded', 'amount_left',
+  'time_active', 'seeding_time', 'last_activity', 'availability', 'dl_limit', 'up_limit', 'save_path',
 ] as const
 export type ColumnId = typeof COLUMN_IDS[number]
 
 export interface ColumnDef {
   id: ColumnId
+  // The name in menus, and in the header unless it has a shorter one.
   label: string
+  header?: string
   // Pixels.
   width: number
   minWidth: number
@@ -26,6 +28,8 @@ const col = (id: ColumnId, label: string, width: number, defaultVisible: boolean
   ({ id, label, width, minWidth: 48, defaultVisible, ...extra })
 
 export const COLUMNS: ColumnDef[] = [
+  // The queue position, headed # as in qBittorrent.
+  col('priority', t('Queue'), 44, true, { numeric: true, header: '#', minWidth: 36 }),
   col('name', t('Name'), 320, true, { minWidth: 120 }),
   col('size', t('Size'), 90, true, { numeric: true }),
   col('progress', t('Progress'), 140, true, { minWidth: 80 }),
@@ -36,6 +40,7 @@ export const COLUMNS: ColumnDef[] = [
   col('upspeed', t('Up speed'), 110, true, { numeric: true }),
   col('eta', t('ETA'), 72, true, { numeric: true }),
   col('ratio', t('Ratio'), 72, true, { numeric: true }),
+  col('popularity', t('Popularity'), 88, true, { numeric: true }),
   col('category', t('Category'), 130, true),
   col('tags', t('Tags'), 150, false),
   col('added_on', t('Added'), 140, true),
@@ -48,7 +53,6 @@ export const COLUMNS: ColumnDef[] = [
   col('seeding_time', t('Seeding time'), 104, false, { numeric: true }),
   col('last_activity', t('Last activity'), 140, false),
   col('availability', t('Availability'), 96, false, { numeric: true }),
-  col('priority', t('Queue'), 70, false, { numeric: true }),
   col('dl_limit', t('Down limit'), 100, false, { numeric: true }),
   col('up_limit', t('Up limit'), 100, false, { numeric: true }),
   col('save_path', t('Save path'), 200, false),
@@ -57,6 +61,9 @@ export const COLUMNS: ColumnDef[] = [
 const BY_ID = new Map(COLUMNS.map(def => [def.id, def]))
 export const getColumn = (id: ColumnId): ColumnDef => BY_ID.get(id)!
 const MAX_WIDTH = 1200
+
+// Layouts saved before version 2 had the queue column hidden near the end; it now leads, as in qBittorrent.
+const LAYOUT_VERSION = 2
 
 export interface ColumnLayout {
   order: ColumnId[]
@@ -72,10 +79,10 @@ export const DEFAULT_COLUMN_LAYOUT: ColumnLayout = {
 
 const isColumnId = (value: unknown): value is ColumnId => typeof value === 'string' && BY_ID.has(value as ColumnId)
 
-// Keeps what it can from a saved layout. Columns added in a later version join at the end, with
-// their default visibility, and the name column can't be hidden.
+// Keeps what it can from a saved layout. Columns added in a later version join next to the column
+// they follow by default, with their default visibility, and the name column can't be hidden.
 export function parseColumnLayout(raw: string | null): ColumnLayout {
-  let saved: Partial<Record<keyof ColumnLayout, unknown>> = {}
+  let saved: Partial<Record<keyof ColumnLayout | 'version', unknown>> = {}
   try {
     const parsed: unknown = raw ? JSON.parse(raw) : {}
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) saved = parsed as typeof saved
@@ -83,10 +90,20 @@ export function parseColumnLayout(raw: string | null): ColumnLayout {
     return DEFAULT_COLUMN_LAYOUT
   }
   const savedOrder = Array.isArray(saved.order) ? [...new Set(saved.order.filter(isColumnId))] : []
-  const order = [...savedOrder, ...COLUMN_IDS.filter(id => !savedOrder.includes(id))]
-  const hidden = Array.isArray(saved.hidden)
+  const order = [...savedOrder]
+  COLUMN_IDS.forEach((id, index) => {
+    if (order.includes(id)) return
+    const before = COLUMN_IDS.slice(0, index).reverse().find(other => order.includes(other))
+    order.splice(before ? order.indexOf(before) + 1 : 0, 0, id)
+  })
+  let hidden = Array.isArray(saved.hidden)
     ? [...new Set(saved.hidden.filter(isColumnId))].filter(id => id !== 'name')
     : DEFAULT_COLUMN_LAYOUT.hidden
+  if (savedOrder.length && saved.version !== LAYOUT_VERSION) {
+    order.splice(order.indexOf('priority'), 1)
+    order.unshift('priority')
+    hidden = hidden.filter(id => id !== 'priority')
+  }
   // Columns the saved layout didn't know about yet keep their default visibility.
   const newColumns = COLUMN_IDS.filter(id => !savedOrder.includes(id) && !getColumn(id).defaultVisible)
   const widths: Partial<Record<ColumnId, number>> = {}
@@ -147,7 +164,7 @@ export function loadColumnLayout(): ColumnLayout {
 
 export function saveColumnLayout(layout: ColumnLayout): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...layout, version: LAYOUT_VERSION }))
   } catch {
     // Blocked storage only means the layout isn't remembered.
   }
@@ -168,6 +185,8 @@ export function sortValue(torrent: Torrent, id: ColumnId): number | string {
     case 'downloaded': return torrent.downloaded ?? torrent.total_downloaded ?? 0
     // Unknown queue positions and limits (-1 or 0) sort after real ones.
     case 'priority': return torrent.priority > 0 ? torrent.priority : Number.MAX_SAFE_INTEGER
+    // Infinite popularity (-1) sorts above every number, and none known below.
+    case 'popularity': return torrent.popularity === undefined ? -2 : torrent.popularity < 0 ? Number.MAX_SAFE_INTEGER : torrent.popularity
     case 'eta': return torrent.eta >= 0 && torrent.eta < 8640000 ? torrent.eta : Number.MAX_SAFE_INTEGER
     default: {
       const value = torrent[id as keyof Torrent]

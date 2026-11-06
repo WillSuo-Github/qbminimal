@@ -1251,6 +1251,13 @@ const bn: Record<string, string> = {
   'Version {version} is available': 'সংস্করণ {version} পাওয়া যাচ্ছে',
   'Couldn\'t check for updates': 'আপডেট খোঁজা যায়নি',
   'Asks GitHub for the latest releases.': 'সর্বশেষ রিলিজের জন্য GitHub-কে জিজ্ঞাসা করে।',
+  'Port': 'পোর্ট',
+  'Flags': 'ফ্ল্যাগ',
+  'Relevance': 'প্রাসঙ্গিকতা',
+  'Client': 'ক্লায়েন্ট',
+  'Peer ID client': 'পিয়ার আইডি ক্লায়েন্ট',
+  'Files': 'ফাইল',
+  'Popularity': 'জনপ্রিয়তা',
 }
 
 export default bn

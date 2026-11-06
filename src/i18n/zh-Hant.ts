@@ -1251,6 +1251,13 @@ const zhHant: Record<string, string> = {
   'Version {version} is available': '有新版本 {version} 可用',
   'Couldn\'t check for updates': '無法檢查更新',
   'Asks GitHub for the latest releases.': '向 GitHub 查詢最新版本。',
+  'Port': '埠',
+  'Flags': '旗標',
+  'Relevance': '關聯',
+  'Client': '用戶端',
+  'Peer ID client': 'Peer ID 用戶端',
+  'Files': '檔案',
+  'Popularity': '人氣',
 }
 
 export default zhHant

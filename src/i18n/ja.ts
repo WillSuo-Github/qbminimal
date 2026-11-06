@@ -1251,6 +1251,13 @@ const ja: Record<string, string> = {
   'Version {version} is available': 'バージョン {version} が利用できます',
   'Couldn\'t check for updates': 'アップデートを確認できませんでした',
   'Asks GitHub for the latest releases.': 'GitHub に最新のリリースを問い合わせます。',
+  'Port': 'ポート',
+  'Flags': 'フラグ',
+  'Relevance': '関連性',
+  'Client': 'クライアント',
+  'Peer ID client': 'クライアントのピアID',
+  'Files': 'ファイル',
+  'Popularity': '人気',
 }
 
 export default ja

@@ -1251,6 +1251,13 @@ const ru: Record<string, string> = {
   'Version {version} is available': 'Доступна версия {version}',
   'Couldn\'t check for updates': 'Не удалось проверить обновления',
   'Asks GitHub for the latest releases.': 'Запрашивает у GitHub последние версии.',
+  'Port': 'Порт',
+  'Flags': 'Флаги',
+  'Relevance': 'Годность',
+  'Client': 'Клиент',
+  'Peer ID client': 'ИД клиента',
+  'Files': 'Файлы',
+  'Popularity': 'Спрос',
 }
 
 export default ru

@@ -1251,6 +1251,13 @@ const tr: Record<string, string> = {
   'Version {version} is available': 'Yeni sürüm: {version}',
   'Couldn\'t check for updates': 'Güncellemeler denetlenemedi',
   'Asks GitHub for the latest releases.': 'En son sürümleri GitHub\'dan sorar.',
+  'Port': 'Bağlantı noktası',
+  'Flags': 'İşaretler',
+  'Relevance': 'Uygunluk',
+  'Client': 'İstemci',
+  'Peer ID client': 'Kişi Kimliği İstemcisi',
+  'Files': 'Dosyalar',
+  'Popularity': 'Yaygınlık',
 }
 
 export default tr

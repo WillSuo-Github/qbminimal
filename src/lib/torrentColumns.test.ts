@@ -5,18 +5,28 @@ import type { Torrent } from '@/types'
 describe('column layout', () => {
   it('starts with the default columns', () => {
     expect(parseColumnLayout(null)).toEqual(DEFAULT_COLUMN_LAYOUT)
-    expect(visibleColumns(DEFAULT_COLUMN_LAYOUT)[0].id).toBe('name')
+    expect(visibleColumns(DEFAULT_COLUMN_LAYOUT).slice(0, 2).map(def => def.id)).toEqual(['priority', 'name'])
+    const ids = visibleColumns(DEFAULT_COLUMN_LAYOUT).map(def => def.id)
+    expect(ids[ids.indexOf('ratio') + 1]).toBe('popularity')
   })
 
-  it('keeps a saved layout and adds columns it did not know about at the end, with their default visibility', () => {
-    const layout = parseColumnLayout(JSON.stringify({ order: ['ratio', 'name', 'bogus'], hidden: ['size', 'name'], widths: { name: 5, ratio: 90, bogus: 3 } }))
-    expect(layout.order.slice(0, 2)).toEqual(['ratio', 'name'])
+  it('keeps a saved layout and adds columns it did not know about next to their neighbours, with their default visibility', () => {
+    const layout = parseColumnLayout(JSON.stringify({ version: 2, order: ['ratio', 'name', 'bogus'], hidden: ['size', 'name'], widths: { name: 5, ratio: 90, bogus: 3 } }))
+    expect(layout.order.slice(0, 3)).toEqual(['priority', 'ratio', 'popularity'])
     expect(layout.order).toHaveLength(COLUMN_IDS.length)
     expect(layout.hidden).toContain('size')
     expect(layout.hidden).toContain('tags')
     expect(layout.hidden).not.toContain('name')
     expect(layout.hidden).not.toContain('progress')
     expect(layout.widths).toEqual({ name: 120, ratio: 90 })
+  })
+
+  it('brings the # column to the front, shown, in layouts saved before it led', () => {
+    const order = COLUMN_IDS.filter(id => id !== 'priority' && id !== 'popularity')
+    const layout = parseColumnLayout(JSON.stringify({ order: [...order.slice(0, 20), 'priority', ...order.slice(20)], hidden: ['priority', 'tags'], widths: {} }))
+    expect(layout.order.slice(0, 2)).toEqual(['priority', 'name'])
+    expect(layout.order[layout.order.indexOf('ratio') + 1]).toBe('popularity')
+    expect(layout.hidden).toEqual(['tags'])
   })
 
   it('falls back to defaults for broken data', () => {
@@ -30,9 +40,9 @@ describe('column layout', () => {
   })
 
   it('moves columns by drag target or one step', () => {
-    expect(moveColumn(DEFAULT_COLUMN_LAYOUT, 'ratio', 'name').order.slice(0, 2)).toEqual(['ratio', 'name'])
-    expect(shiftColumn(DEFAULT_COLUMN_LAYOUT, 'size', -1).order.slice(0, 2)).toEqual(['size', 'name'])
-    expect(shiftColumn(DEFAULT_COLUMN_LAYOUT, 'name', -1)).toBe(DEFAULT_COLUMN_LAYOUT)
+    expect(moveColumn(DEFAULT_COLUMN_LAYOUT, 'ratio', 'name').order.slice(0, 3)).toEqual(['priority', 'ratio', 'name'])
+    expect(shiftColumn(DEFAULT_COLUMN_LAYOUT, 'size', -1).order.slice(0, 3)).toEqual(['priority', 'size', 'name'])
+    expect(shiftColumn(DEFAULT_COLUMN_LAYOUT, 'priority', -1)).toBe(DEFAULT_COLUMN_LAYOUT)
   })
 
   it('keeps widths within limits', () => {
@@ -52,6 +62,11 @@ describe('sorting', () => {
   it('puts unknown ETAs and queue positions last', () => {
     expect(compareTorrents(t({ eta: 8640000 }), t({ eta: 60 }), 'eta')).toBeGreaterThan(0)
     expect(compareTorrents(t({ priority: -1 }), t({ priority: 3 }), 'priority')).toBeGreaterThan(0)
+  })
+
+  it('ranks infinite popularity highest and unknown lowest', () => {
+    expect(compareTorrents(t({ popularity: -1 }), t({ popularity: 40 }), 'popularity')).toBeGreaterThan(0)
+    expect(compareTorrents(t({}), t({ popularity: 0 }), 'popularity')).toBeLessThan(0)
   })
 
   it('shows trackers by host', () => {

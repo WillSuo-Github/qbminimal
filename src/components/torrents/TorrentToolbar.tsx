@@ -7,7 +7,7 @@ import { DEFAULT_COLUMN_LAYOUT, getColumn, toggleColumn, type ColumnLayout } fro
 import { t } from '@/i18n'
 
 // What a card shows, or matters most, for sorting cards. The table sorts from its headers.
-const CARD_SORTS: SortField[] = ['name', 'state', 'progress', 'size', 'dlspeed', 'upspeed', 'eta', 'ratio', 'num_seeds', 'num_leechs', 'added_on', 'completion_on', 'category']
+const CARD_SORTS: SortField[] = ['priority', 'name', 'state', 'progress', 'size', 'dlspeed', 'upspeed', 'eta', 'ratio', 'num_seeds', 'num_leechs', 'added_on', 'completion_on', 'category']
 
 interface TorrentToolbarProps {
   list: TorrentList

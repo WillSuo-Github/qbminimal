@@ -63,7 +63,9 @@ function Cell({ torrent, id }: { torrent: Torrent; id: ColumnId }): ReactNode {
     case 'seeding_time': return formatDuration(torrent.seeding_time)
     case 'last_activity': return formatDateTime(torrent.last_activity)
     case 'availability': return torrent.availability !== undefined && torrent.availability >= 0 ? torrent.availability.toFixed(2) : '-'
-    case 'priority': return torrent.priority > 0 ? torrent.priority : '-'
+    // qBittorrent's * for a torrent outside the queue.
+    case 'priority': return torrent.priority > 0 ? torrent.priority : <span className="text-muted-foreground/60">*</span>
+    case 'popularity': return torrent.popularity === undefined ? '-' : torrent.popularity < 0 ? '∞' : torrent.popularity.toFixed(2)
     case 'dl_limit': return limit(torrent.dl_limit)
     case 'up_limit': return limit(torrent.up_limit)
     case 'save_path': return <span title={torrent.save_path}>{torrent.save_path}</span>
@@ -202,9 +204,10 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
                     onClick={() => onSort(def.id)}
                     onKeyDown={(e) => onHeaderKey(e, def.id)}
                     title={t('Sort by {label}. Drag to move, or press Alt and an arrow key.', { label: def.label })}
+                    aria-label={def.header ? def.label : undefined}
                     className={cn('flex w-full min-w-0 cursor-grab items-center gap-1 hover:text-foreground active:cursor-grabbing', def.numeric && 'justify-end', sorted && 'text-foreground')}
                   >
-                    <span className="truncate">{def.label}</span>
+                    <span className="truncate">{def.header ?? def.label}</span>
                     {sorted && (sortDirection === 'asc' ? <ArrowUp className="h-3.5 w-3.5 flex-shrink-0" /> : <ArrowDown className="h-3.5 w-3.5 flex-shrink-0" />)}
                   </button>
                   <span

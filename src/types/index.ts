@@ -55,6 +55,8 @@ export interface Torrent {
   total_uploaded?: number
   total_wasted?: number
   ratio: number
+  // Web API 2.11 and newer: ratio per month active, or -1 for infinite.
+  popularity?: number
   eta: number
   num_seeds: number
   num_complete: number
@@ -130,9 +132,14 @@ export interface TorrentPeer {
   downloaded?: number
   uploaded?: number
   relevance?: number
+  // Letters for the connection's state, explained one per line in flags_desc.
   flags?: string
   flags_desc?: string
   host_name?: string
+  // The client named by the peer ID, which can differ from the one the peer reports.
+  peer_id_client?: string
+  // The files the peer's pieces belong to, one per line.
+  files?: string
   // Filled only when "Resolve peer countries" is on. The code is lower case, like "de".
   country?: string
   country_code?: string

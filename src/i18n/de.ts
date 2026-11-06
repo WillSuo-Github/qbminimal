@@ -1251,6 +1251,13 @@ const de: Record<string, string> = {
   'Version {version} is available': 'Version {version} ist verfügbar',
   'Couldn\'t check for updates': 'Konnte nicht auf Aktualisierungen prüfen',
   'Asks GitHub for the latest releases.': 'Fragt GitHub nach den neuesten Versionen.',
+  'Port': 'Port',
+  'Flags': 'Flags',
+  'Relevance': 'Relevanz',
+  'Client': 'Programm',
+  'Peer ID client': 'Peer-ID-Client',
+  'Files': 'Dateien',
+  'Popularity': 'Popularität',
 }
 
 export default de

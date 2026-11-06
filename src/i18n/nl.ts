@@ -1251,6 +1251,13 @@ const nl: Record<string, string> = {
   'Version {version} is available': 'Versie {version} is beschikbaar',
   'Couldn\'t check for updates': 'Kan niet controleren op updates',
   'Asks GitHub for the latest releases.': 'Vraagt GitHub naar de nieuwste versies.',
+  'Port': 'Poort',
+  'Flags': 'Vlaggen',
+  'Relevance': 'Relevantie',
+  'Client': 'Cliënt',
+  'Peer ID client': 'Peer-ID client',
+  'Files': 'Bestanden',
+  'Popularity': 'Populariteit',
 }
 
 export default nl

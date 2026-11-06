@@ -63,7 +63,7 @@ function fakeHash(name: string): string {
   return out.slice(0, 40)
 }
 
-function toTorrent(t: DemoTorrent, jitter: number): Torrent {
+function toTorrent(t: DemoTorrent, jitter: number, queuePosition: number): Torrent {
   const done = t.progress >= 1
   const running = !t.stopped
   const dlspeed = running && !done ? Math.round(t.down * jitter) : 0
@@ -78,7 +78,7 @@ function toTorrent(t: DemoTorrent, jitter: number): Torrent {
     comment: '', created_by: 'mktorrent 1.1', creation_date: added - 86400,
     state, progress: t.progress, size: t.size, total_size: t.size, amount_left: left, completed: downloaded,
     availability: done ? -1 : 1 + t.progress, pieces_num: 480, pieces_have: Math.round(480 * t.progress), piece_size: Math.ceil(t.size / 480),
-    seq_dl: false, f_l_piece_prio: false, super_seeding: false, force_start: false, auto_tmm: false, priority: done ? 0 : 1,
+    seq_dl: false, f_l_piece_prio: false, super_seeding: false, force_start: false, auto_tmm: false, priority: done ? 0 : queuePosition, popularity: Math.round(t.ratio / Math.max(t.addedDaysAgo / 30, 1) * 100) / 100,
     dlspeed, upspeed, downloaded, uploaded: Math.round(downloaded * t.ratio), total_downloaded: downloaded, total_uploaded: Math.round(downloaded * t.ratio), total_wasted: 0,
     ratio: t.ratio, eta: dlspeed > 0 ? Math.round(left / dlspeed) : 8640000,
     num_seeds: running ? 12 : 0, num_complete: 140, num_leechs: running ? 3 : 0, num_incomplete: 22, connections_count: running ? 15 : 0, connections_limit: 100,
@@ -185,7 +185,8 @@ export class DemoClient implements ApiClient {
     this.rid++
     // Speeds wobble by up to 15% either way.
     const jitter = 0.85 + Math.random() * 0.3
-    const list = this.torrents.map(t => toTorrent(t, this.sessionPaused ? 0 : jitter))
+    const unfinished = this.torrents.filter(t => t.progress < 1)
+    const list = this.torrents.map(t => toTorrent(t, this.sessionPaused ? 0 : jitter, unfinished.indexOf(t) + 1))
     const trackers: Record<string, string[]> = {}
     for (const t of list) (trackers[t.tracker] ??= []).push(t.hash)
     const dl = list.reduce((sum, t) => sum + t.dlspeed, 0)
@@ -292,8 +293,18 @@ export class DemoClient implements ApiClient {
   async getTorrentPeers(): Promise<TorrentPeers> {
     return {
       peers: {
-        '203.0.113.5:51413': { ip: '203.0.113.5', port: 51413, client: 'qBittorrent 5.1.2', country: 'Germany', country_code: 'de', progress: 1, dl_speed: 0, up_speed: 120_000, connection: 'BT' },
-        '198.51.100.20:6881': { ip: '198.51.100.20', port: 6881, client: 'Transmission 4.0.6', country: 'Canada', country_code: 'ca', progress: 0.42, dl_speed: 80_000, up_speed: 0, connection: 'μTP' },
+        '203.0.113.5:51413': {
+          ip: '203.0.113.5', port: 51413, client: 'qBittorrent 5.1.2', peer_id_client: 'qBittorrent 5.1.2', country: 'Germany', country_code: 'de',
+          progress: 1, dl_speed: 0, up_speed: 120_000, downloaded: 0, uploaded: 84_000_000, relevance: 0, connection: 'BT',
+          flags: 'u I H X E', flags_desc: 'u = Peer is interested and you are choked\nI = Incoming connection\nH = Peer from DHT\nX = Peer from PEX\nE = Encrypted traffic',
+          files: 'archlinux-2026.11.01-x86_64.iso',
+        },
+        '198.51.100.20:6881': {
+          ip: '198.51.100.20', port: 6881, client: 'Transmission 4.0.6', peer_id_client: 'Transmission 4.0.6', country: 'Canada', country_code: 'ca',
+          progress: 0.42, dl_speed: 80_000, up_speed: 0, downloaded: 31_000_000, uploaded: 0, relevance: 0.58, connection: 'μTP',
+          flags: 'D P', flags_desc: 'D = Downloading from the peer\nP = µTP connection',
+          files: 'Sintel.2010.1080p.mkv\nSintel.2010.1080p.srt',
+        },
       },
       showFlags: true,
     }

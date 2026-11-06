@@ -1251,6 +1251,13 @@ const hi: Record<string, string> = {
   'Version {version} is available': 'वर्शन {version} उपलब्ध है',
   'Couldn\'t check for updates': 'अपडेट नहीं जाँच सके',
   'Asks GitHub for the latest releases.': 'नवीनतम रिलीज़ के लिए GitHub से पूछता है।',
+  'Port': 'पोर्ट',
+  'Flags': 'फ़्लैग',
+  'Relevance': 'अनुकूलता',
+  'Client': 'क्लाइंट',
+  'Peer ID client': 'पीयर ID क्लाइंट',
+  'Files': 'फ़ाइलें',
+  'Popularity': 'लोकप्रियता',
 }
 
 export default hi

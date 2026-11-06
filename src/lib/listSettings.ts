@@ -19,9 +19,12 @@ export interface ListSettings {
   pageSize: number
 }
 
-export const DEFAULT_LIST_SETTINGS: ListSettings = { sortField: 'name', sortDirection: 'asc', status: 'all', category: '', tag: '', tracker: '', view: 'auto', pageSize: 20 }
+// Sorted by queue position (#), as qBittorrent sorts its list until you choose otherwise.
+export const DEFAULT_LIST_SETTINGS: ListSettings = { sortField: 'priority', sortDirection: 'asc', status: 'all', category: '', tag: '', tracker: '', view: 'auto', pageSize: 20 }
 
 const STORAGE_KEY = 'qbminimal.torrentList'
+// Settings saved before version 2 kept the old default sort by name, so that one is left behind.
+const SETTINGS_VERSION = 2
 
 // Anything unreadable or out of date falls back to the defaults, one value at a time.
 export function parseListSettings(raw: string | null): ListSettings {
@@ -32,10 +35,11 @@ export function parseListSettings(raw: string | null): ListSettings {
   } catch {
     return DEFAULT_LIST_SETTINGS
   }
+  const current = saved.version === SETTINGS_VERSION
   const text = (key: keyof ListSettings) => (typeof saved[key] === 'string' ? saved[key] as string : DEFAULT_LIST_SETTINGS[key] as string)
   return {
-    sortField: COLUMN_IDS.includes(saved.sortField as SortField) ? saved.sortField as SortField : DEFAULT_LIST_SETTINGS.sortField,
-    sortDirection: saved.sortDirection === 'desc' ? 'desc' : 'asc',
+    sortField: current && COLUMN_IDS.includes(saved.sortField as SortField) ? saved.sortField as SortField : DEFAULT_LIST_SETTINGS.sortField,
+    sortDirection: current && saved.sortDirection === 'desc' ? 'desc' : 'asc',
     status: STATUS_FILTERS.some(({ value }) => value === saved.status) ? saved.status as StatusFilter : DEFAULT_LIST_SETTINGS.status,
     category: text('category'),
     tag: text('tag'),
@@ -55,7 +59,7 @@ export function loadListSettings(): ListSettings {
 
 export function saveListSettings(settings: ListSettings): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings, version: SETTINGS_VERSION }))
   } catch {
     // Private browsing can block storage. The list still works, it just won't be remembered.
   }

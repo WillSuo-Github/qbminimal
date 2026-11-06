@@ -1251,6 +1251,13 @@ const zhHans: Record<string, string> = {
   'Version {version} is available': '有新版本 {version} 可用',
   'Couldn\'t check for updates': '无法检查更新',
   'Asks GitHub for the latest releases.': '向 GitHub 查询最新版本。',
+  'Port': '端口',
+  'Flags': '标志',
+  'Relevance': '文件关联',
+  'Client': '客户端',
+  'Peer ID client': '对等节点 ID 客户端',
+  'Files': '文件',
+  'Popularity': '流行度',
 }
 
 export default zhHans

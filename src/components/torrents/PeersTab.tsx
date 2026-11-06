@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { Ban } from 'lucide-react'
 import { BannedPeers } from '@/components/BannedPeers'
 import { ConfirmAction } from '@/components/ConfirmAction'
@@ -10,8 +10,52 @@ import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
 import { parsePeerAddresses } from '@/lib/peers'
 import { formatBytes } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { DOWN_SPEED_COLOR, UP_SPEED_COLOR } from '@/lib/torrentState'
+import type { TorrentPeer } from '@/types'
 import { PeerFlag } from './PeerFlag'
 import { t } from '@/i18n'
+
+const percent = (fraction: number | undefined) => `${Math.round((fraction ?? 0) * 1000) / 10}%`
+const speed = (bytes: number | undefined, color: string) =>
+  bytes && bytes > 0 ? <span className={color}>{formatBytes(bytes)}/s</span> : <span className="text-muted-foreground/60">-</span>
+
+// Everything qBittorrent's peer list shows, as labelled values. Hovering the flags explains them.
+function PeerFacts({ peer }: { peer: TorrentPeer }) {
+  // Label, value, an optional tooltip, and whether it takes a whole line (long names do).
+  const facts: [string, ReactNode, string?, boolean?][] = [
+    [t('Port'), peer.port ?? '-'],
+    [t('Connection'), peer.connection || '-'],
+    [t('Flags'), peer.flags?.trim() || '-', peer.flags_desc],
+    [t('Progress'), percent(peer.progress)],
+    [t('Down speed'), speed(peer.dl_speed, DOWN_SPEED_COLOR)],
+    [t('Up speed'), speed(peer.up_speed, UP_SPEED_COLOR)],
+    [t('Downloaded'), formatBytes(peer.downloaded ?? 0)],
+    [t('Uploaded'), formatBytes(peer.uploaded ?? 0)],
+    [t('Relevance'), percent(peer.relevance)],
+    [t('Client'), peer.client || t('Unknown client'), undefined, true],
+    [t('Peer ID client'), peer.peer_id_client || '-', undefined, true],
+  ]
+  const files = (peer.files ?? '').split('\n').filter(Boolean)
+  return (
+    <dl className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 text-xs min-[400px]:grid-cols-2">
+      {facts.map(([label, value, title, wide]) => (
+        <div key={label} className={cn('flex min-w-0 justify-between gap-2', wide && 'col-span-full')}>
+          <dt className="shrink-0 text-muted-foreground">{label}</dt>
+          <dd className="min-w-0 truncate text-end tabular-nums" title={title || (typeof value === 'string' || typeof value === 'number' ? String(value) : undefined)}>{value}</dd>
+        </div>
+      ))}
+      {files.length > 0 && (
+        <div className="col-span-full flex min-w-0 gap-2">
+          <dt className="shrink-0 text-muted-foreground">{t('Files')}</dt>
+          <dd className="min-w-0 flex-1 text-end">
+            {files.map(file => <p key={file} className="truncate" dir="auto" title={file}>{file}</p>)}
+          </dd>
+        </div>
+      )}
+    </dl>
+  )
+}
 
 export function PeersTab({ hash }: { hash: string }) {
   const { data, isLoading, isError } = useTorrentPeers(hash)
@@ -64,10 +108,11 @@ export function PeersTab({ hash }: { hash: string }) {
             <li key={id} className="flex items-start gap-2 px-2 py-2">
               <PeerFlag code={peer.country_code} country={peer.country} />
               <div className="min-w-0 flex-1">
-                <p className="break-all tabular-nums">{peer.ip ?? id}{peer.port ? `:${peer.port}` : ''}</p>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {[peer.country, peer.client || t('Unknown client'), `${Math.round((peer.progress ?? 0) * 100)}%`, `↓ ${formatBytes(peer.dl_speed ?? 0)}/s`, `↑ ${formatBytes(peer.up_speed ?? 0)}/s`].filter(Boolean).join(' · ')}
-                </p>
+                <p className="break-all font-medium tabular-nums" dir="ltr">{peer.ip ?? id}</p>
+                {(peer.host_name || peer.country) && (
+                  <p className="break-all text-xs text-muted-foreground">{[peer.host_name, peer.country].filter(Boolean).join(' · ')}</p>
+                )}
+                <PeerFacts peer={peer} />
               </div>
               <ConfirmAction
                 label={t('Ban {value}', { value: peer.ip ?? id })}

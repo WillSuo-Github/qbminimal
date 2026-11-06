@@ -1251,6 +1251,13 @@ const ko: Record<string, string> = {
   'Version {version} is available': '{version} 버전을 사용할 수 있습니다',
   'Couldn\'t check for updates': '업데이트를 확인하지 못했습니다',
   'Asks GitHub for the latest releases.': 'GitHub에 최신 릴리스를 확인합니다.',
+  'Port': '포트',
+  'Flags': '플래그',
+  'Relevance': '관련성',
+  'Client': '클라이언트',
+  'Peer ID client': '피어 ID 클라이언트',
+  'Files': '파일',
+  'Popularity': '인지도',
 }
 
 export default ko

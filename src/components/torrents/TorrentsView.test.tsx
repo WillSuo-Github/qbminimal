@@ -41,7 +41,7 @@ function renderView() {
 }
 
 const row = (name: string) => within(screen.getByRole('table')).getByText(name).closest('tr') as HTMLElement
-const selectedNames = () => screen.queryAllByRole('row').filter(r => r.getAttribute('aria-selected') === 'true').map(r => within(r).getAllByRole('cell')[1].textContent)
+const selectedNames = () => screen.queryAllByRole('row').filter(r => r.getAttribute('aria-selected') === 'true').map(r => within(r).getAllByRole('cell')[2].textContent)
 
 describe('the torrent list', () => {
   beforeEach(() => {
