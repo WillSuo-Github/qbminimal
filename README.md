@@ -34,7 +34,11 @@ qBittorrent 5.0 or newer. A few features need a newer version and stay hidden or
 4. In qBittorrent, open **Tools > Options > Web UI**, turn on **Use alternative Web UI**, and set **Files location** to the `qbminimal` folder. Choose the folder that contains `public`, not `public` itself.
 5. Open the Web UI address in your browser and sign in with your qBittorrent username and password.
 
-To update, replace the contents of the `qbminimal` folder with the new release and reload the page.
+### Updating
+
+1. Replace the contents of the `qbminimal` folder with the new release.
+2. Restart qBittorrent, or turn **Use alternative Web UI** off, apply, and turn it on again. qBittorrent keeps the page in memory and only reads it again when the file looks newer than the copy it holds, and files unpacked from a zip keep the time they were built.
+3. Reload the page. **Settings > App > About** shows the version that's running.
 
 ## Development
 

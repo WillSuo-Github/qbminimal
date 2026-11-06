@@ -23,7 +23,7 @@ export async function setFinishNotices(on: boolean): Promise<boolean> {
 export function notifyInBackground(title: string, body: string): boolean {
   if (!notificationsSupported() || Notification.permission !== 'granted' || document.visibilityState === 'visible') return false
   try {
-    new Notification(title, { body, icon: 'icon-192.png', tag: body })
+    new Notification(title, { body, icon: 'app-icon-192.png', tag: body })
     return true
   } catch {
     // Some phones only allow notifications from a service worker.

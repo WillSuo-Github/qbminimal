@@ -64,14 +64,16 @@ case "$DEPLOY_TARGET" in
 esac
 
 echo "Copying to $DEPLOY_TARGET/public/"
-# index.html goes last, so it never points to files that haven't arrived yet.
+# index.html goes last, so it never points to files that haven't arrived yet. It gets the time of
+# copying rather than the zip's: qBittorrent keeps pages in memory and only reads one again when
+# the file is newer than the copy it holds.
 rsync -rt --exclude index.html "$public/" "$DEPLOY_TARGET/public/"
-rsync -t "$public/index.html" "$DEPLOY_TARGET/public/index.html"
+rsync "$public/index.html" "$DEPLOY_TARGET/public/index.html"
 
 echo "Checking $DEPLOY_URL"
 if curl -fsSL -H 'Cache-Control: no-cache' "$DEPLOY_URL" | grep -qF "assets/$bundle"; then
   echo "Done: the server is serving $bundle"
 else
-  echo "Copied, but the server isn't serving $bundle yet. Check the Files location setting." >&2
+  echo "Copied, but the server isn't serving $bundle yet. Check the Files location setting, or restart qBittorrent so it reads the new page." >&2
   exit 1
 fi
