@@ -28,7 +28,7 @@ export function SearchHistory({ activeId, onOpen }: { activeId: number | null; o
       <ul className="flex flex-wrap gap-2">
         {[...searches].reverse().map(search => (
           <li key={search.id} className={`flex items-center rounded-md border text-xs ${activeId === search.id ? 'border-primary' : ''}`}>
-            <button type="button" className="px-2 py-1 text-left" onClick={() => onOpen(search.id)}>
+            <button type="button" className="px-2 py-1 text-start" onClick={() => onOpen(search.id)}>
               {patterns[search.id] ?? t('Search {id}', { id: search.id })} · {search.total} {search.status === 'Running' ? t('(running)') : ''}
             </button>
             <Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label={t('Delete search {value}', { value: patterns[search.id] ?? search.id })} title={t('Delete')} onClick={() => remove(search.id)}>

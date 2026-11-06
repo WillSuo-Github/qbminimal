@@ -216,7 +216,7 @@ export function TorrentsView() {
             <div key={i} className="flex animate-pulse items-center gap-3 py-1.5">
               <div className="h-4 w-4 rounded bg-muted" />
               <div className="h-3 rounded bg-muted" style={{ width: `${width}%` }} />
-              <div className="ml-auto h-3 w-16 rounded bg-muted" />
+              <div className="ms-auto h-3 w-16 rounded bg-muted" />
             </div>
           ))}
         </div>
@@ -252,7 +252,7 @@ export function TorrentsView() {
           <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label={t('Clear selection')} title={t('Clear selection (Esc)')} onClick={selection.clear}>
             <X className="h-4 w-4" />
           </Button>
-          <span className="mr-auto pr-2 text-sm whitespace-nowrap tabular-nums">{t('{count} selected', { count })}</span>
+          <span className="me-auto pe-2 text-sm whitespace-nowrap tabular-nums">{t('{count} selected', { count })}</span>
           <Button variant="ghost" size="sm" className="gap-1" title={t('Start')} onClick={start}><Play className="h-4 w-4" /><span className="max-sm:sr-only">{t('Start')}</span></Button>
           <Button variant="ghost" size="sm" className="gap-1" title={t('Stop')} onClick={stop}><Pause className="h-4 w-4" /><span className="max-sm:sr-only">{t('Stop')}</span></Button>
           <MoreMenu torrents={selectedTorrents} groups={groups} />
@@ -308,9 +308,9 @@ export function TorrentsView() {
           </label>
           {list.pageCount > 1 && (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" aria-label={t('Previous page')} disabled={list.page === 1} onClick={() => list.setPage(list.page - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" aria-label={t('Previous page')} disabled={list.page === 1} onClick={() => list.setPage(list.page - 1)}><ChevronLeft className="h-4 w-4 rtl:rotate-180" /></Button>
               <span className="text-sm tabular-nums">{list.page} / {list.pageCount}</span>
-              <Button variant="outline" size="sm" aria-label={t('Next page')} disabled={list.page === list.pageCount} onClick={() => list.setPage(list.page + 1)}><ChevronRight className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" aria-label={t('Next page')} disabled={list.page === list.pageCount} onClick={() => list.setPage(list.page + 1)}><ChevronRight className="h-4 w-4 rtl:rotate-180" /></Button>
             </div>
           )}
         </div>

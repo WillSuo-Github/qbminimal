@@ -732,6 +732,7 @@ const de: Record<string, string> = {
   'Availability': 'Verfügbarkeit',
   'Available once qBittorrent has this torrent\'s metadata': 'Verfügbar, sobald qBittorrent die Metadaten dieses Torrents hat',
   'Completed': 'Abgeschlossen',
+  'Completed on': 'Abgeschlossen am',
   'Connections': 'Verbindungen',
   'Copy hash': 'Hash kopieren',
   'Copy magnet link': 'Magnet-Link kopieren',
@@ -1245,6 +1246,11 @@ const de: Record<string, string> = {
   'Seeding': 'Seedet',
   'Stopped': 'Gestoppt',
   'unlimited': 'unbegrenzt',
+  'Checking for updates...': 'Suche nach Updates...',
+  'Up to date': 'Aktuell',
+  'Version {version} is available': 'Version {version} ist verfügbar',
+  'Couldn\'t check for updates': 'Konnte nicht nach Updates suchen',
+  'Asks GitHub for the latest releases.': 'Fragt GitHub nach den neuesten Versionen.',
 }
 
 export default de

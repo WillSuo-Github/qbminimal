@@ -153,7 +153,7 @@ export function TorrentStats({ children }: { children: ReactNode }) {
                   {group.rows.map(([label, value]) => (
                     <div key={label} className="flex justify-between gap-4 py-1.5">
                       <dt className="text-muted-foreground">{label}</dt>
-                      <dd className="text-right tabular-nums">{value}</dd>
+                      <dd className="text-end tabular-nums">{value}</dd>
                     </div>
                   ))}
                 </dl>

@@ -126,10 +126,10 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
         <ConnectionBanner />
       </header>
 
-      <div ref={scroller} className="max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-y-contain">
+      <div ref={scroller} className="max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-x-none max-md:overscroll-y-contain">
         <div className="flex">
           {sidebarShown && (
-            <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 flex-shrink-0 flex-col gap-1 self-start overflow-y-auto border-r p-2 pb-4 md:flex">
+            <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 flex-shrink-0 flex-col gap-1 self-start overflow-y-auto border-e p-2 pb-4 md:flex">
               <nav aria-label={t('Pages')} className="flex flex-col gap-1">{navButtons}</nav>
               <LogoutButton className="mt-auto" />
             </aside>

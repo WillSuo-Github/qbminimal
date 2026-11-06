@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import de from './de'
-import { detectLanguage, t, setCatalogForTests } from './index'
+import { detectLanguage, LANGUAGES, t, setCatalogForTests, type Catalog } from './index'
+
+const catalogs = import.meta.glob<Catalog>(['./*.ts', '!./index.ts', '!./*.test.ts'], { eager: true, import: 'default' })
 
 const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort()
 
@@ -16,12 +18,33 @@ describe('translations', () => {
 
   it('picks the first browser language it has, or English', () => {
     expect(detectLanguage(['de-AT', 'en-US'])).toBe('de')
-    expect(detectLanguage(['fr-FR', 'en-GB'])).toBe('en')
+    expect(detectLanguage(['sv-SE', 'en-GB'])).toBe('en')
+    expect(detectLanguage(['fr-FR', 'en-GB'])).toBe('fr')
+    expect(detectLanguage(['pt-PT'])).toBe('pt')
     expect(detectLanguage([])).toBe('en')
   })
 
-  it('keeps every placeholder in the German text', () => {
-    const broken = Object.entries(de).filter(([english, german]) => placeholders(english).join() !== placeholders(german).join())
-    expect(broken).toEqual([])
+  it('tells Simplified from Traditional Chinese', () => {
+    expect(detectLanguage(['zh-CN'])).toBe('zh-Hans')
+    expect(detectLanguage(['zh'])).toBe('zh-Hans')
+    expect(detectLanguage(['zh-SG'])).toBe('zh-Hans')
+    expect(detectLanguage(['zh-TW'])).toBe('zh-Hant')
+    expect(detectLanguage(['zh-HK'])).toBe('zh-Hant')
+    expect(detectLanguage(['zh-Hant-US'])).toBe('zh-Hant')
+  })
+
+  it('keeps every placeholder in every translation', () => {
+    for (const [file, catalog] of Object.entries(catalogs)) {
+      const broken = Object.entries(catalog).filter(([english, translated]) => placeholders(english).join() !== placeholders(translated).join())
+      expect(broken, file).toEqual([])
+    }
+  })
+
+  it('has a catalog for every language, each covering the German one', () => {
+    for (const { code } of LANGUAGES.filter(language => language.code !== 'en')) {
+      const catalog = catalogs[`./${code}.ts`]
+      expect(catalog, code).toBeDefined()
+      expect(Object.keys(de).filter(key => !catalog[key]), code).toEqual([])
+    }
   })
 })

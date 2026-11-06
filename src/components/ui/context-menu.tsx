@@ -44,7 +44,7 @@ function ContextMenuSubTrigger({ className, children, ...props }: React.Componen
   return (
     <ContextMenuPrimitive.SubTrigger className={cn(row, className)} {...props}>
       {children}
-      <ChevronRightIcon className="ml-auto" />
+      <ChevronRightIcon className="ms-auto rtl:rotate-180" />
     </ContextMenuPrimitive.SubTrigger>
   )
 }

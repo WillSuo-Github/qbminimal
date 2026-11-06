@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useQuery } from '@tanstack/react-query'
+import { UpdateCheck } from './UpdateCheck'
 import { useAppVersion, usePreferences, useSavePreferences, useWebApiVersion } from '@/hooks/useApi'
 import { formatDuration } from '@/lib/format'
 import { toast } from '@/hooks/use-toast'
@@ -88,10 +89,11 @@ function AppSection() {
             {about.filter((row): row is [string, string] => !!row[1]).map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">{label}</dt>
-                <dd className="text-right">{value}</dd>
+                <dd className="text-end">{value}</dd>
               </div>
             ))}
           </dl>
+          <UpdateCheck qbittorrentVersion={qbittorrentVersion} />
         </CardContent>
       </Card>
 

@@ -26,7 +26,7 @@ function walk(dir) {
 walk(root)
 
 let problems = 0
-for (const file of fs.readdirSync(path.join(root, 'i18n')).filter(name => /^[a-z]{2}\.ts$/.test(name))) {
+for (const file of fs.readdirSync(path.join(root, 'i18n')).filter(name => /^[a-z]{2}(-[A-Z][a-z]{3})?\.ts$/.test(name))) {
   const text = fs.readFileSync(path.join(root, 'i18n', file), 'utf8')
   const catalog = new Set([...text.matchAll(/^ {2}'((?:[^'\\]|\\.)*)':/gm)].map(match => match[1].replace(/\\(.)/g, '$1')))
   const missing = [...used].filter(key => !catalog.has(key))

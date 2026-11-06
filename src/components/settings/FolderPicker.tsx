@@ -85,7 +85,7 @@ export function FolderPicker({ open, onOpenChange, start, mode, onPick }: Folder
                 <li key={entry.path}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-muted"
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-start hover:bg-muted"
                     onClick={() => (entry.isDir ? setDir(entry.path) : (onPick(entry.path), onOpenChange(false)))}
                   >
                     {entry.isDir ? <Folder className="h-4 w-4 flex-shrink-0 text-yellow-500" /> : <File className="h-4 w-4 flex-shrink-0 text-muted-foreground" />}

@@ -122,7 +122,7 @@ export function TorrentContentTab({ hash }: { hash: string }) {
         <div className={cn(row, 'font-medium')} style={pad} onClick={() => want(node.indexes, node.wanted !== 'all')}>
           <WantedIcon state={node.wanted} />
           <button type="button" className="rounded p-0.5 hover:bg-muted" aria-label={open ? t('Collapse {name}', { name: node.name }) : t('Expand {name}', { name: node.name })} aria-expanded={open} onClick={(e) => { e.stopPropagation(); toggleOpen(node.path) }}>
-            <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-90')} />
+            <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', open ? 'rotate-90' : 'rtl:rotate-180')} />
           </button>
           <span className="min-w-0 flex-1 truncate text-sm" title={node.name}>{node.name}</span>
           <span className="text-xs font-normal text-muted-foreground tabular-nums">{formatBytes(node.size)}</span>

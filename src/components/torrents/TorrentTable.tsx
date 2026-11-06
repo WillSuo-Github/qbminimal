@@ -14,7 +14,10 @@ import { t } from '@/i18n'
 const SELECT_WIDTH = 40
 // The checkbox stays in view while the other columns scroll sideways. Its background has to be
 // solid, so it mixes the row's hover tint into the card color.
-const PINNED_LEFT = 'sticky left-0 z-10 bg-card group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]'
+// Columns of words, which follow the language's direction; all others are numbers or paths.
+const WORD_COLUMNS: ReadonlySet<ColumnId> = new Set(['name', 'state', 'category', 'tags'])
+
+const PINNED_LEFT = 'sticky start-0 z-10 bg-card group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]'
 const PINNED_SELECTED = 'bg-muted group-hover:bg-muted'
 
 // Download green and upload blue, as in the header.
@@ -32,7 +35,7 @@ function Cell({ torrent, id }: { torrent: Torrent; id: ColumnId }): ReactNode {
           <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary">
             <div className="h-full bg-primary" style={{ width: `${torrent.progress * 100}%` }} />
           </div>
-          <span className="w-10 flex-shrink-0 text-right text-xs">{percent >= 100 ? '100' : percent.toFixed(1)}</span>
+          <span className="w-10 flex-shrink-0 text-end text-xs">{percent >= 100 ? '100' : percent.toFixed(1)}</span>
         </div>
       )
     }
@@ -94,7 +97,8 @@ interface TorrentTableProps {
 export function TorrentTable({ torrents, layout, onLayoutChange, selected, selectAllState, onToggle, onSelectAll, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
   const columns = visibleColumns(layout)
   const [resizing, setResizing] = useState<{ id: ColumnId; width: number } | null>(null)
-  const resizeStart = useRef<{ x: number; width: number } | null>(null)
+  // sign is -1 right to left, where a column's resizing edge is on its left.
+  const resizeStart = useRef<{ x: number; width: number; sign: number } | null>(null)
   const [dragging, setDragging] = useState<ColumnId | null>(null)
   const [dropTarget, setDropTarget] = useState<ColumnId | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
@@ -106,13 +110,13 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
     e.preventDefault()
     e.stopPropagation()
     e.currentTarget.setPointerCapture(e.pointerId)
-    resizeStart.current = { x: e.clientX, width: widthOf(id) }
+    resizeStart.current = { x: e.clientX, width: widthOf(id), sign: getComputedStyle(e.currentTarget).direction === 'rtl' ? -1 : 1 }
     setResizing({ id, width: widthOf(id) })
   }
   const moveResize = (e: PointerEvent<HTMLSpanElement>, id: ColumnId) => {
     if (!resizeStart.current || resizing?.id !== id) return
     const def = getColumn(id)
-    setResizing({ id, width: Math.max(def.minWidth, resizeStart.current.width + e.clientX - resizeStart.current.x) })
+    setResizing({ id, width: Math.max(def.minWidth, resizeStart.current.width + (e.clientX - resizeStart.current.x) * resizeStart.current.sign) })
   }
   const endResize = () => {
     if (resizing) onLayoutChange(resizeColumn(layout, resizing.id, resizing.width))
@@ -150,14 +154,16 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
   const onHeaderKey = (e: KeyboardEvent<HTMLButtonElement>, id: ColumnId) => {
     if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
     e.preventDefault()
-    onLayoutChange(shiftColumn(layout, id, e.key === 'ArrowLeft' ? -1 : 1))
+    // The arrow points where the column goes on screen, which is backwards right to left.
+    const towardsStart = (e.key === 'ArrowLeft') !== (getComputedStyle(e.currentTarget).direction === 'rtl')
+    onLayoutChange(shiftColumn(layout, id, towardsStart ? -1 : 1))
   }
 
   const dragIndex = dragging ? columns.findIndex(def => def.id === dragging) : -1
 
   return (
     // Its own scrollbar is hidden: the one at the bottom of the screen stands in for it.
-    <div ref={scroller} className="overflow-x-auto rounded-xl border bg-card [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div ref={scroller} className="overflow-x-auto overscroll-x-none rounded-xl border bg-card [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <table className="table-fixed caption-bottom text-sm tabular-nums" style={{ width: `max(100%, ${total}px)` }}>
         <colgroup>
           <col style={{ width: SELECT_WIDTH }} />
@@ -167,7 +173,7 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
         </colgroup>
         <thead className="border-b">
           <tr>
-            <th className="sticky left-0 z-10 h-10 bg-card px-2 text-left">
+            <th className="sticky start-0 z-10 h-10 bg-card px-2 text-start">
               <Checkbox aria-label={t('Select all')} checked={selectAllState} onCheckedChange={(checked) => onSelectAll(checked === true)} />
             </th>
             {columns.map((def, index) => {
@@ -185,7 +191,7 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
                   onDragEnd={() => { setDragging(null); setDropTarget(null) }}
                   aria-sort={sorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
                   className={cn(
-                    'relative h-10 select-none px-2 text-left align-middle font-medium text-muted-foreground',
+                    'relative h-10 select-none px-2 text-start align-middle font-medium text-muted-foreground',
                     dragging === def.id && 'opacity-50',
                     marker === 'before' && 'shadow-[inset_2px_0_0_var(--color-primary)]',
                     marker === 'after' && 'shadow-[inset_-2px_0_0_var(--color-primary)]',
@@ -211,7 +217,7 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
                     onPointerUp={endResize}
                     onPointerCancel={endResize}
                     onDoubleClick={() => resetWidth(def.id)}
-                    className="group absolute right-0 top-0 flex h-full w-2 cursor-col-resize touch-none justify-end"
+                    className="group absolute end-0 top-0 flex h-full w-2 cursor-col-resize touch-none justify-end"
                   >
                     <span className={cn('h-full w-px', resizing?.id === def.id ? 'bg-primary' : 'bg-border group-hover:bg-primary/60')} />
                   </span>
@@ -233,10 +239,10 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
                   className={cn(
                     'group cursor-default border-b transition-colors outline-none select-none last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [-webkit-touch-callout:none]',
                     isSelected && 'bg-muted',
-                    openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)]',
+                    openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)] rtl:shadow-[inset_-3px_0_0_var(--color-primary)]',
                   )}
                 >
-                  <td className={cn('px-2 py-1.5', PINNED_LEFT, isSelected && PINNED_SELECTED, openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)]')}>
+                  <td className={cn('px-2 py-1.5', PINNED_LEFT, isSelected && PINNED_SELECTED, openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)] rtl:shadow-[inset_-3px_0_0_var(--color-primary)]')}>
                     <Checkbox
                       aria-label={t('Select {name}', { name: torrent.name })}
                       checked={isSelected}
@@ -245,8 +251,9 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
                     />
                   </td>
                   {columns.map(def => (
-                    <td key={def.id} className={cn('truncate px-2 py-1.5 whitespace-nowrap', def.numeric && 'text-right', def.id === 'name' && 'text-xs font-medium')}>
-                      <Cell torrent={torrent} id={def.id} />
+                    <td key={def.id} className={cn('truncate px-2 py-1.5 whitespace-nowrap', def.numeric && 'text-end', def.id === 'name' && 'text-xs font-medium')}>
+                      {/* Numbers, sizes, dates and paths read left to right, also in a right-to-left language. */}
+                      {WORD_COLUMNS.has(def.id) ? <Cell torrent={torrent} id={def.id} /> : <span dir="ltr"><Cell torrent={torrent} id={def.id} /></span>}
                     </td>
                   ))}
                   <td aria-hidden />

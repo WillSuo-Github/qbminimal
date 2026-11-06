@@ -55,7 +55,7 @@ export function DeleteTorrentsDialog({ torrents, open, onOpenChange, onConfirm }
         </ul>
         <div className="flex items-center gap-1">
           <Checkbox id="delete-files" checked={withFiles} onCheckedChange={(checked) => changeFiles(checked === true)} />
-          <label htmlFor="delete-files" className="pl-1 text-sm font-medium">{t('Also delete the downloaded files')}</label>
+          <label htmlFor="delete-files" className="ps-1 text-sm font-medium">{t('Also delete the downloaded files')}</label>
           <Button
             type="button"
             variant="ghost"

@@ -110,8 +110,8 @@ export function TorrentDetailsPanel({ torrent, onClose }: DetailsProps) {
       <section
         aria-label={t('Torrent details')}
         data-keeps-swipes
-        className="fixed right-0 bottom-0 z-30 flex flex-col border-t bg-card shadow-[0_-6px_16px_-8px_rgb(0_0_0/0.15)]"
-        style={{ height, left: 'var(--sidebar-width, 0px)' }}
+        className="fixed end-0 bottom-0 z-30 flex flex-col border-t bg-card shadow-[0_-6px_16px_-8px_rgb(0_0_0/0.15)]"
+        style={{ height, insetInlineStart: 'var(--sidebar-width, 0px)' }}
       >
         <div
           role="separator"
@@ -150,7 +150,7 @@ export function TorrentDetailsDialog({ torrent, onClose }: DetailsProps) {
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="truncate pr-6" title={torrent.name}>{torrent.name}</DialogTitle>
+          <DialogTitle className="truncate pe-6" title={torrent.name}>{torrent.name}</DialogTitle>
         </DialogHeader>
         <DetailsTabs torrent={torrent} listClassName="w-full" />
       </DialogContent>

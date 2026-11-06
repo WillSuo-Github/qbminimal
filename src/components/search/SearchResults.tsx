@@ -94,9 +94,9 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
             {shown.map(result => (
               <tr key={`${result.fileUrl}|${result.descrLink}`} className="cursor-pointer border-b last:border-0 hover:bg-muted/50" onClick={() => result.fileUrl && onAdd(result)}>
                 <td className="max-w-[28rem] truncate px-3 py-1.5 font-medium" title={result.fileName}>{result.fileName}</td>
-                <td className="px-3 py-1.5 text-right">{formatBytes(result.fileSize)}</td>
-                <td className="px-3 py-1.5 text-right text-green-600 dark:text-green-400">{result.nbSeeders}</td>
-                <td className="px-3 py-1.5 text-right text-red-500">{result.nbLeechers}</td>
+                <td className="px-3 py-1.5 text-end">{formatBytes(result.fileSize)}</td>
+                <td className="px-3 py-1.5 text-end text-green-600 dark:text-green-400">{result.nbSeeders}</td>
+                <td className="px-3 py-1.5 text-end text-red-500">{result.nbLeechers}</td>
                 <td className="max-w-[12rem] truncate px-3 py-1.5 text-muted-foreground">{host(result.siteUrl)}</td>
                 <td className="px-2 py-1">{links(result)}</td>
               </tr>
@@ -108,7 +108,7 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
       <ul className="space-y-2 md:hidden">
         {shown.map(result => (
           <li key={`${result.fileUrl}|${result.descrLink}`} className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2.5">
-            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => result.fileUrl && onAdd(result)}>
+            <button type="button" className="min-w-0 flex-1 text-start" onClick={() => result.fileUrl && onAdd(result)}>
               <span className="block text-[10px] text-muted-foreground">{t('{seeds} seeds · {leeches} leeches', { seeds: result.nbSeeders, leeches: result.nbLeechers })}</span>
               <span className="block text-xs font-medium [overflow-wrap:anywhere]">{result.fileName}</span>
               <span className="block truncate text-[10px] text-muted-foreground">{formatBytes(result.fileSize)} · {host(result.siteUrl)}</span>

@@ -68,10 +68,10 @@ export function TorrentToolbar({ list, filtersOpen, onToggleFilters, columns, on
       )}
 
       <div className="flex rounded-md border" role="group" aria-label={t('View')}>
-        <Button variant={list.showTable ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-r-none" aria-label={t('Table view')} title={t('Table view')} aria-pressed={list.showTable} onClick={() => list.showAsTable(true)}>
+        <Button variant={list.showTable ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-e-none" aria-label={t('Table view')} title={t('Table view')} aria-pressed={list.showTable} onClick={() => list.showAsTable(true)}>
           <Table2 className="h-4 w-4" />
         </Button>
-        <Button variant={list.showTable ? 'ghost' : 'secondary'} size="icon" className="h-8 w-8 rounded-l-none" aria-label={t('Card view')} title={t('Card view')} aria-pressed={!list.showTable} onClick={() => list.showAsTable(false)}>
+        <Button variant={list.showTable ? 'ghost' : 'secondary'} size="icon" className="h-8 w-8 rounded-s-none" aria-label={t('Card view')} title={t('Card view')} aria-pressed={!list.showTable} onClick={() => list.showAsTable(false)}>
           <LayoutList className="h-4 w-4" />
         </Button>
       </div>

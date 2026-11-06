@@ -49,7 +49,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
                   <dt className="flex flex-shrink-0 gap-1">
                     {keys.map(key => <kbd key={key} className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs">{key}</kbd>)}
                   </dt>
-                  <dd className="text-right text-muted-foreground">{what}</dd>
+                  <dd className="text-end text-muted-foreground">{what}</dd>
                 </div>
               ))}
             </dl>

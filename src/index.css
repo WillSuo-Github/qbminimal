@@ -89,6 +89,12 @@
     overscroll-behavior-x: none;
   }
 
+  /* Right to left, numbers with units ("1.4 GB", "3 MB/s") keep their order, rather than being
+     turned around by the text around them. */
+  [dir='rtl'] :where(.tabular-nums:not(table), .tabular-nums:not(table) *) {
+    unicode-bidi: plaintext;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;

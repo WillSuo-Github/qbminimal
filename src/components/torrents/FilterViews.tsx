@@ -29,8 +29,8 @@ export function FilterViewChips({ list, views, onViewsChange }: FilterViewsProps
         const active = sameFilters(view.filters, list.filters)
         return (
           <span key={view.name} className={cn('group inline-flex h-7 items-center rounded-full border text-sm', active ? 'border-transparent bg-secondary' : 'bg-background')}>
-            <button type="button" className="pr-1 pl-3" aria-pressed={active} onClick={() => list.applyFilters(view.filters)}>{view.name}</button>
-            <button type="button" className="mr-1 rounded-full p-0.5 text-muted-foreground opacity-60 hover:bg-muted hover:opacity-100" aria-label={t('Remove the view {name}', { name: view.name })} title={t('Remove this view')} onClick={() => remove(view.name)}>
+            <button type="button" className="pe-1 ps-3" aria-pressed={active} onClick={() => list.applyFilters(view.filters)}>{view.name}</button>
+            <button type="button" className="me-1 rounded-full p-0.5 text-muted-foreground opacity-60 hover:bg-muted hover:opacity-100" aria-label={t('Remove the view {name}', { name: view.name })} title={t('Remove this view')} onClick={() => remove(view.name)}>
               <X className="h-3 w-3" />
             </button>
           </span>

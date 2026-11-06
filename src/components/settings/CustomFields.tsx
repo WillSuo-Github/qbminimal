@@ -52,7 +52,7 @@ export function ScanDirsEditor({ value, onChange, disabled }: { value: unknown; 
         </div>
       ))}
       <Button type="button" size="sm" variant="outline" disabled={disabled} onClick={() => update([...rows, ['', 0]])}>
-        <Plus className="mr-1 h-4 w-4" />{' '}{t('Add folder')}
+        <Plus className="me-1 h-4 w-4" />{' '}{t('Add folder')}
       </Button>
     </div>
   )
@@ -225,7 +225,7 @@ export function CookiesEditor() {
       ))}
       <div className="flex gap-2">
         <Button type="button" size="sm" variant="outline" onClick={() => setRows([...rows, emptyCookie()])}>
-          <Plus className="mr-1 h-4 w-4" />{' '}{t('Add cookie')}
+          <Plus className="me-1 h-4 w-4" />{' '}{t('Add cookie')}
         </Button>
         <Button type="button" size="sm" disabled={saving} onClick={save}>{t('Save cookies')}</Button>
       </div>

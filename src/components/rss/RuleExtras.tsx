@@ -29,7 +29,7 @@ function MatchesDialog({ name, onClose }: { name: string; onClose: () => void })
           feeds.map(([feed, titles]) => (
             <section key={feed} className="space-y-1">
               <h3 className="text-sm font-medium">{feed}</h3>
-              <ul className="list-disc space-y-0.5 pl-5 text-xs">
+              <ul className="list-disc space-y-0.5 ps-5 text-xs">
                 {titles.map((title, i) => <li key={`${title}-${i}`} className="break-words">{title}</li>)}
               </ul>
             </section>

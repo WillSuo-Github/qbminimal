@@ -1,0 +1,45 @@
+// Checks GitHub for newer releases of qbminimal and qBittorrent. Only runs when asked to.
+
+export const QBMINIMAL_RELEASES = 'https://github.com/kajover/qbminimal/releases/latest'
+export const QBITTORRENT_DOWNLOADS = 'https://www.qbittorrent.org/download'
+
+type Version = [number, number, number]
+
+// "v1.2.3", "1.2.3" or "release-1.2.3" as numbers; anything else, such as a beta, is null.
+export function parseVersion(text: string | undefined): Version | null {
+  const match = /^(?:v|release-)?(\d+)\.(\d+)\.(\d+)$/.exec(text?.trim() ?? '')
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null
+}
+
+export function isNewer(candidate: Version, current: Version) {
+  for (let i = 0; i < 3; i++) if (candidate[i] !== current[i]) return candidate[i] > current[i]
+  return false
+}
+
+export const formatVersion = (version: Version) => version.join('.')
+
+// The newest finished qBittorrent release among its git tags, which are named like release-5.1.2.
+export function newestRelease(tags: readonly string[]): Version | null {
+  let newest: Version | null = null
+  for (const tag of tags) {
+    const version = parseVersion(tag.startsWith('release-') ? tag : undefined)
+    if (version && (!newest || isNewer(version, newest))) newest = version
+  }
+  return newest
+}
+
+async function getJson(url: string) {
+  const response = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } })
+  if (!response.ok) throw new Error(`GitHub answered ${response.status}`)
+  return response.json() as Promise<unknown>
+}
+
+export async function latestQbminimal(): Promise<Version | null> {
+  const release = await getJson('https://api.github.com/repos/kajover/qbminimal/releases/latest') as { tag_name?: string }
+  return parseVersion(release.tag_name)
+}
+
+export async function latestQbittorrent(): Promise<Version | null> {
+  const tags = await getJson('https://api.github.com/repos/qbittorrent/qBittorrent/tags?per_page=100') as { name?: string }[]
+  return newestRelease(tags.map(tag => tag.name ?? ''))
+}

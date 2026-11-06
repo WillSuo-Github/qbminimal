@@ -1,5 +1,5 @@
-import type { ReactElement, ReactNode } from 'react'
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import type { ComponentType, ReactElement, ReactNode } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Users } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes } from '@/lib/format'
 import { formatEta, getStateColor, getStateLabel, peerPair as pair } from '@/lib/torrentState'
@@ -17,6 +17,17 @@ interface TorrentCardsProps {
   openHash: string | null
   rowProps: (torrent: Torrent) => RowProps
   wrapList: (list: ReactElement) => ReactNode
+}
+
+// A number with an icon in place of its name, which the tooltip and screen readers give.
+function Fact({ icon: Icon, label, children }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; label: string; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-0.5" title={label}>
+      <Icon className="h-2.5 w-2.5" aria-hidden />
+      <span aria-hidden>{children}</span>
+      <span className="sr-only">{label}</span>
+    </span>
+  )
 }
 
 // The phone layout: one card per torrent. A tap opens its details, and holding a card starts
@@ -51,14 +62,20 @@ export function TorrentCards({ torrents, selected, showCheckboxes, onToggle, ope
                 <span className="text-muted-foreground tabular-nums">{Math.round(torrent.progress * 100)}%</span>
               </div>
               <p className="text-xs font-medium [overflow-wrap:anywhere]">{torrent.name}</p>
-              <div className="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-muted-foreground tabular-nums">
+              {/* One line of facts, each with an icon. Hovering or a screen reader gives the words. */}
+              <div className="mt-0.5 flex items-center gap-x-2 overflow-hidden text-[10px] whitespace-nowrap text-muted-foreground tabular-nums">
                 <span>{formatBytes(torrent.size)}</span>
-                <span className="flex items-center gap-0.5"><ArrowDown className="h-2.5 w-2.5 text-green-500" />{formatBytes(torrent.dlspeed)}/s</span>
-                <span className="flex items-center gap-0.5"><ArrowUp className="h-2.5 w-2.5 text-blue-500" />{formatBytes(torrent.upspeed)}/s</span>
-                <span>{torrent.progress < 1 ? t('ETA {eta}', { eta: formatEta(torrent.eta) }) : t('Ratio {value}', { value: torrent.ratio.toFixed(2) })}</span>
-                {/* Connected, with the swarm's total in brackets, as in the table. One piece, so
-                    it wraps to the next line whole. */}
-                <span>{t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })}</span>
+                <span className="flex items-center gap-0.5"><ArrowDown className="h-2.5 w-2.5 text-green-500" aria-hidden />{formatBytes(torrent.dlspeed)}/s</span>
+                <span className="flex items-center gap-0.5"><ArrowUp className="h-2.5 w-2.5 text-blue-500" aria-hidden />{formatBytes(torrent.upspeed)}/s</span>
+                {torrent.progress < 1 ? (
+                  <Fact icon={Clock} label={t('ETA {eta}', { eta: formatEta(torrent.eta) })}>{formatEta(torrent.eta)}</Fact>
+                ) : (
+                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })}>{torrent.ratio.toFixed(2)}</Fact>
+                )}
+                {/* Connected seeds and peers; the title adds how many are in the swarm. */}
+                <Fact icon={Users} label={t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })}>
+                  {Math.max(torrent.num_seeds, 0)}/{Math.max(torrent.num_leechs, 0)}
+                </Fact>
               </div>
               <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-secondary">
                 <div className="h-full bg-primary transition-[width]" style={{ width: `${torrent.progress * 100}%` }} />

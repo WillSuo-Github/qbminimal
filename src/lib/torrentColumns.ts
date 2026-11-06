@@ -39,7 +39,7 @@ export const COLUMNS: ColumnDef[] = [
   col('category', t('Category'), 130, true),
   col('tags', t('Tags'), 150, false),
   col('added_on', t('Added'), 140, true),
-  col('completion_on', t('Completed'), 140, false),
+  col('completion_on', t('Completed on'), 140, false),
   col('tracker', t('Tracker'), 150, false),
   col('downloaded', t('Downloaded'), 100, false, { numeric: true }),
   col('uploaded', t('Uploaded'), 100, false, { numeric: true }),

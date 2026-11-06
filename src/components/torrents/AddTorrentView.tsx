@@ -254,7 +254,7 @@ export function AddTorrentView() {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload className="me-2 h-4 w-4" />
                   {t('Choose .torrent files')}
                 </Button>
                 <span className="text-xs text-muted-foreground">{t('or drop them here')}</span>
@@ -279,7 +279,7 @@ export function AddTorrentView() {
                 {!activeMetadata ? (
                   <div className="flex flex-wrap items-center gap-2">
                     <Button type="button" size="sm" variant="outline" disabled={fetchingMetadata} onClick={fetchFileList}>
-                      {fetchingMetadata && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {fetchingMetadata && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                       {fetchingMetadata ? t('Getting file list...') : t('Choose files first')}
                     </Button>
                     {fetchingMetadata && <Button type="button" size="sm" variant="ghost" onClick={stopFetching}>{t('Stop')}</Button>}
@@ -429,7 +429,7 @@ export function AddTorrentView() {
             )}
 
             <Button type="submit" className="w-full" disabled={adding}>
-              {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {adding && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {sourceCount > 1 ? t('Add {sourceCount} torrents', { sourceCount }) : t('Add torrent')}
             </Button>
           </form>

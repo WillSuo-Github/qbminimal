@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react'
+import { useSideSwipes } from '@/hooks/useSideSwipes'
 
 const MIN_THUMB = 40
 
@@ -18,34 +19,22 @@ export function BottomScrollbar({ target }: { target: RefObject<HTMLElement | nu
   const [geometry, setGeometry] = useState<Geometry | null>(null)
   const track = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; scrollLeft: number } | null>(null)
+  useSideSwipes(target)
 
   useEffect(() => {
     const scroller = target.current
     if (!scroller) return
     let frame = 0
-    // A sideways swipe anywhere on the page, the space under a short list and this bar
-    // included, scrolls the table, instead of doing nothing or making the browser go back a
-    // page. Things that scroll sideways themselves, dialogs, menus and the details panel keep
-    // their swipes.
-    const scrollSideways = (e: WheelEvent) => {
-      if (e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
-      if (scroller.scrollWidth <= scroller.clientWidth + 1) return
-      const start = e.target instanceof Element ? e.target : null
-      if (!start || start.closest('[role="dialog"], [role="menu"], [data-keeps-swipes]')) return
-      for (let el: Element | null = start; el && el !== document.body; el = el.parentElement) {
-        if (el === scroller) return
-        if (el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return
-      }
-      e.preventDefault()
-      scroller.scrollBy({ left: e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX })
-    }
     const measure = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const { scrollWidth, clientWidth, scrollLeft } = scroller
         if (scrollWidth <= clientWidth + 1) return setGeometry(null)
         const rect = scroller.getBoundingClientRect()
-        setGeometry({ left: rect.left, width: rect.width, visible: clientWidth / scrollWidth, position: scrollLeft / (scrollWidth - clientWidth) })
+        const range = scrollWidth - clientWidth
+        // Right to left, scrolling starts at the right edge and scrollLeft runs from 0 down.
+        const fromLeft = getComputedStyle(scroller).direction === 'rtl' ? range + scrollLeft : scrollLeft
+        setGeometry({ left: rect.left, width: rect.width, visible: clientWidth / scrollWidth, position: fromLeft / range })
       })
     }
     measure()
@@ -55,13 +44,11 @@ export function BottomScrollbar({ target }: { target: RefObject<HTMLElement | nu
     if (scroller.firstElementChild) observer.observe(scroller.firstElementChild)
     scroller.addEventListener('scroll', measure, { passive: true })
     window.addEventListener('resize', measure)
-    window.addEventListener('wheel', scrollSideways, { passive: false })
     return () => {
       cancelAnimationFrame(frame)
       observer.disconnect()
       scroller.removeEventListener('scroll', measure)
       window.removeEventListener('resize', measure)
-      window.removeEventListener('wheel', scrollSideways)
     }
   }, [target])
 
@@ -107,6 +94,7 @@ export function BottomScrollbar({ target }: { target: RefObject<HTMLElement | nu
   return (
     <div
       aria-hidden
+      data-own-touch
       className="fixed z-20 px-1"
       style={{
         left: geometry.left,

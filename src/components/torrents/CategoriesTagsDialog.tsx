@@ -124,7 +124,7 @@ export function CategoriesTagsDialog({ open, onOpenChange }: { open: boolean; on
             ) : (
               <ul className="flex flex-wrap gap-2">
                 {tags.map(tag => (
-                  <li key={tag} className="flex items-center gap-0.5 rounded-md border pl-2">
+                  <li key={tag} className="flex items-center gap-0.5 rounded-md border ps-2">
                     <span className="break-all">{tag}</span>
                     <ConfirmAction
                       label={t('Delete tag {tag}', { tag })}

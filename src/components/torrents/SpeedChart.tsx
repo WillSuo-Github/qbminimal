@@ -58,7 +58,7 @@ export function SpeedChart() {
       </figcaption>
 
       <div className="flex gap-2 text-[10px] text-muted-foreground tabular-nums">
-        <div className="flex flex-col justify-between py-0.5 text-right" aria-hidden>
+        <div className="flex flex-col justify-between py-0.5 text-end" aria-hidden>
           <span>{speed(top)}</span>
           <span>{speed(top / 2)}</span>
           <span>0</span>
