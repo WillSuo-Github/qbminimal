@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useLogs, usePeerLog } from '@/hooks/useApi'
+import { t } from '@/i18n'
 
 // qBittorrent's log levels.
 const LEVELS = [
-  { key: 'normal', type: 1, label: 'Normal', className: '' },
-  { key: 'info', type: 2, label: 'Info', className: 'text-blue-500' },
-  { key: 'warning', type: 4, label: 'Warning', className: 'text-amber-500' },
-  { key: 'critical', type: 8, label: 'Critical', className: 'text-red-500' },
+  { key: 'normal', type: 1, label: t('Normal'), className: '' },
+  { key: 'info', type: 2, label: t('Info'), className: 'text-blue-500' },
+  { key: 'warning', type: 4, label: t('Warning'), className: 'text-amber-500' },
+  { key: 'critical', type: 8, label: t('Critical'), className: 'text-red-500' },
 ] as const
 
 type Levels = Record<(typeof LEVELS)[number]['key'], boolean>
@@ -47,14 +48,14 @@ function MainLog() {
           </div>
         ))}
       </div>
-      <Input type="search" aria-label="Filter log messages" placeholder="Filter messages" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
+      <Input type="search" aria-label={t('Filter log messages')} placeholder={t('Filter messages')} value={search} onChange={(e) => setSearch(e.target.value)} className="h-9" />
 
       {isLoading ? (
-        <p className="py-6 text-center text-muted-foreground">Loading logs...</p>
+        <p className="py-6 text-center text-muted-foreground">{t('Loading logs...')}</p>
       ) : isError && !logs ? (
-        <p className="py-6 text-center text-muted-foreground">Couldn't load the log</p>
+        <p className="py-6 text-center text-muted-foreground">{t('Couldn\'t load the log')}</p>
       ) : shown.length === 0 ? (
-        <p className="py-6 text-center text-muted-foreground">No matching entries</p>
+        <p className="py-6 text-center text-muted-foreground">{t('No matching entries')}</p>
       ) : (
         <ul className="space-y-1">
           {shown.map(log => {
@@ -76,9 +77,9 @@ function PeerLog() {
   const { data: entries, isLoading, isError } = usePeerLog(true)
   const shown = useMemo(() => [...(entries ?? [])].reverse().slice(0, MAX_ROWS), [entries])
 
-  if (isLoading) return <p className="py-6 text-center text-muted-foreground">Loading peer log...</p>
-  if (isError && !entries) return <p className="py-6 text-center text-muted-foreground">Couldn't load the peer log</p>
-  if (shown.length === 0) return <p className="py-6 text-center text-muted-foreground">No blocked or banned peers yet</p>
+  if (isLoading) return <p className="py-6 text-center text-muted-foreground">{t('Loading peer log...')}</p>
+  if (isError && !entries) return <p className="py-6 text-center text-muted-foreground">{t('Couldn\'t load the peer log')}</p>
+  if (shown.length === 0) return <p className="py-6 text-center text-muted-foreground">{t('No blocked or banned peers yet')}</p>
 
   return (
     <ul className="space-y-1">
@@ -87,7 +88,7 @@ function PeerLog() {
           <span className="whitespace-nowrap text-muted-foreground">{formatTimestamp(entry.timestamp)}</span>
           <span className="break-all">
             <span className={entry.blocked ? 'text-red-500' : ''}>{entry.ip}</span>
-            {' '}{entry.blocked ? 'blocked' : 'banned'}{entry.reason ? `: ${entry.reason}` : ''}
+            {' '}{entry.blocked ? t('blocked') : t('banned')}{entry.reason ? `: ${entry.reason}` : ''}
           </span>
         </li>
       ))}
@@ -98,13 +99,13 @@ function PeerLog() {
 export function LogsView() {
   return (
     <div className="space-y-4">
-      <PageHeader title="Logs" description="What qBittorrent has reported, newest first" />
+      <PageHeader title={t('Logs')} description={t('What qBittorrent has reported, newest first')} />
       <Card>
       <CardContent>
         <Tabs defaultValue="main">
           <TabsList className="mb-3 grid w-full grid-cols-2">
-            <TabsTrigger value="main">General</TabsTrigger>
-            <TabsTrigger value="peers">Blocked peers</TabsTrigger>
+            <TabsTrigger value="main">{t('General')}</TabsTrigger>
+            <TabsTrigger value="peers">{t('Blocked peers')}</TabsTrigger>
           </TabsList>
           <TabsContent value="main"><MainLog /></TabsContent>
           <TabsContent value="peers"><PeerLog /></TabsContent>

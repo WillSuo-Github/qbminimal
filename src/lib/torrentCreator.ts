@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 export interface CreatorForm {
   sourcePath: string
   format: 'hybrid' | 'v2' | 'v1'
@@ -41,7 +43,7 @@ export function encodeUrlList(text: string): string {
 
 export function buildCreatorParams(form: CreatorForm, libtorrentV2: boolean, supportsIgnoreDotfiles = false): Record<string, string> | string {
   const sourcePath = form.sourcePath.trim()
-  if (!sourcePath) return 'Choose the file or folder to share'
+  if (!sourcePath) return t('Choose the file or folder to share')
   const params: Record<string, string> = {
     sourcePath,
     pieceSize: String(form.pieceSize),

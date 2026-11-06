@@ -1,15 +1,16 @@
 import type { Torrent } from '@/types'
+import { t } from '@/i18n'
 
 export type StatusFilter = 'all' | 'downloading' | 'seeding' | 'completed' | 'stopped' | 'active' | 'errored'
 
 export const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'downloading', label: 'Downloading' },
-  { value: 'seeding', label: 'Seeding' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'stopped', label: 'Stopped' },
-  { value: 'active', label: 'Active' },
-  { value: 'errored', label: 'Errored' },
+  { value: 'all', label: t('All statuses') },
+  { value: 'downloading', label: t('Downloading') },
+  { value: 'seeding', label: t('Seeding') },
+  { value: 'completed', label: t('Completed') },
+  { value: 'stopped', label: t('Stopped') },
+  { value: 'active', label: t('Active') },
+  { value: 'errored', label: t('Errored') },
 ]
 
 export interface TorrentFilters {

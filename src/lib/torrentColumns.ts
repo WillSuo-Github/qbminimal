@@ -1,5 +1,6 @@
 import type { Torrent } from '@/types'
 import { getTrackerHost } from './torrentFilters'
+import { t } from '@/i18n'
 
 // The torrent table's columns. Each can be shown or hidden, dragged to a new place, and resized,
 // and the layout is kept per device.
@@ -25,32 +26,32 @@ const col = (id: ColumnId, label: string, width: number, defaultVisible: boolean
   ({ id, label, width, minWidth: 48, defaultVisible, ...extra })
 
 export const COLUMNS: ColumnDef[] = [
-  col('name', 'Name', 320, true, { minWidth: 120 }),
-  col('size', 'Size', 90, true, { numeric: true }),
-  col('progress', 'Progress', 140, true, { minWidth: 80 }),
-  col('state', 'Status', 116, true, { minWidth: 80 }),
-  col('num_seeds', 'Seeds', 88, true, { numeric: true }),
-  col('num_leechs', 'Peers', 88, true, { numeric: true }),
-  col('dlspeed', 'Down speed', 110, true, { numeric: true }),
-  col('upspeed', 'Up speed', 110, true, { numeric: true }),
-  col('eta', 'ETA', 72, true, { numeric: true }),
-  col('ratio', 'Ratio', 72, true, { numeric: true }),
-  col('category', 'Category', 130, true),
-  col('tags', 'Tags', 150, false),
-  col('added_on', 'Added', 140, true),
-  col('completion_on', 'Completed', 140, false),
-  col('tracker', 'Tracker', 150, false),
-  col('downloaded', 'Downloaded', 100, false, { numeric: true }),
-  col('uploaded', 'Uploaded', 100, false, { numeric: true }),
-  col('amount_left', 'Remaining', 100, false, { numeric: true }),
-  col('time_active', 'Time active', 100, false, { numeric: true }),
-  col('seeding_time', 'Seeding time', 104, false, { numeric: true }),
-  col('last_activity', 'Last activity', 140, false),
-  col('availability', 'Availability', 96, false, { numeric: true }),
-  col('priority', 'Queue', 70, false, { numeric: true }),
-  col('dl_limit', 'Down limit', 100, false, { numeric: true }),
-  col('up_limit', 'Up limit', 100, false, { numeric: true }),
-  col('save_path', 'Save path', 200, false),
+  col('name', t('Name'), 320, true, { minWidth: 120 }),
+  col('size', t('Size'), 90, true, { numeric: true }),
+  col('progress', t('Progress'), 140, true, { minWidth: 80 }),
+  col('state', t('Status'), 116, true, { minWidth: 80 }),
+  col('num_seeds', t('Seeds'), 88, true, { numeric: true }),
+  col('num_leechs', t('Peers'), 88, true, { numeric: true }),
+  col('dlspeed', t('Down speed'), 110, true, { numeric: true }),
+  col('upspeed', t('Up speed'), 110, true, { numeric: true }),
+  col('eta', t('ETA'), 72, true, { numeric: true }),
+  col('ratio', t('Ratio'), 72, true, { numeric: true }),
+  col('category', t('Category'), 130, true),
+  col('tags', t('Tags'), 150, false),
+  col('added_on', t('Added'), 140, true),
+  col('completion_on', t('Completed'), 140, false),
+  col('tracker', t('Tracker'), 150, false),
+  col('downloaded', t('Downloaded'), 100, false, { numeric: true }),
+  col('uploaded', t('Uploaded'), 100, false, { numeric: true }),
+  col('amount_left', t('Remaining'), 100, false, { numeric: true }),
+  col('time_active', t('Time active'), 100, false, { numeric: true }),
+  col('seeding_time', t('Seeding time'), 104, false, { numeric: true }),
+  col('last_activity', t('Last activity'), 140, false),
+  col('availability', t('Availability'), 96, false, { numeric: true }),
+  col('priority', t('Queue'), 70, false, { numeric: true }),
+  col('dl_limit', t('Down limit'), 100, false, { numeric: true }),
+  col('up_limit', t('Up limit'), 100, false, { numeric: true }),
+  col('save_path', t('Save path'), 200, false),
 ]
 
 const BY_ID = new Map(COLUMNS.map(def => [def.id, def]))

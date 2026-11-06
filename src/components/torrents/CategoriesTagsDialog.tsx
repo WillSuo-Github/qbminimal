@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
 import { parseTags } from '@/lib/torrentFilters'
 import type { TorrentCategory } from '@/types'
+import { t } from '@/i18n'
 
 function CategoryRow({ category }: { category: TorrentCategory }) {
   const action = useTorrentAction()
@@ -18,19 +19,19 @@ function CategoryRow({ category }: { category: TorrentCategory }) {
 
   const save = (e: FormEvent) => {
     e.preventDefault()
-    action.mutateAsync({ work: () => qbitClient.editCategory(category.name, savePath.trim()), failed: 'Failed to change category' })
-      .then(() => { setEditing(false); toast.success('Category saved') }, () => undefined)
+    action.mutateAsync({ work: () => qbitClient.editCategory(category.name, savePath.trim()), failed: t('Failed to change category') })
+      .then(() => { setEditing(false); toast.success(t('Category saved')) }, () => undefined)
   }
 
   if (editing) {
     return (
       <li className="py-2">
         <form onSubmit={save} className="space-y-2">
-          <Label htmlFor={`category-path-${category.name}`} className="text-xs text-muted-foreground">Save path for {category.name} (blank = default)</Label>
+          <Label htmlFor={`category-path-${category.name}`} className="text-xs text-muted-foreground">{t('Save path for {name} (blank = default)', { name: category.name })}</Label>
           <Input id={`category-path-${category.name}`} value={savePath} autoFocus onChange={(e) => setSavePath(e.target.value)} className="h-8 text-sm" />
           <div className="flex gap-2">
-            <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>Save</Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>{t('Save')}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>{t('Cancel')}</Button>
           </div>
         </form>
       </li>
@@ -41,19 +42,19 @@ function CategoryRow({ category }: { category: TorrentCategory }) {
     <li className="flex items-start gap-1 py-2">
       <div className="min-w-0 flex-1">
         <p className="break-words">{category.name}</p>
-        <p className="break-all text-xs text-muted-foreground">{category.savePath || 'Default save path'}</p>
+        <p className="break-all text-xs text-muted-foreground">{category.savePath || t('Default save path')}</p>
       </div>
-      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-label={`Edit ${category.name}`} title="Edit category" onClick={() => { setSavePath(category.savePath ?? ''); setEditing(true) }}>
+      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-label={t('Edit {name}', { name: category.name })} title={t('Edit category')} onClick={() => { setSavePath(category.savePath ?? ''); setEditing(true) }}>
         <Pencil className="h-3.5 w-3.5" />
       </Button>
       <ConfirmAction
-        label={`Delete ${category.name}`}
-        title={`Delete the ${category.name} category?`}
-        message="Torrents in it will have no category. Their files stay where they are."
-        confirmLabel="Delete"
+        label={t('Delete {name}', { name: category.name })}
+        title={t('Delete the {name} category?', { name: category.name })}
+        message={t('Torrents in it will have no category. Their files stay where they are.')}
+        confirmLabel={t('Delete')}
         disabled={action.isPending}
-        onConfirm={() => action.mutateAsync({ work: () => qbitClient.removeCategories([category.name]), failed: 'Failed to delete category' })
-          .then(() => { toast.success('Category deleted') }, () => undefined)}
+        onConfirm={() => action.mutateAsync({ work: () => qbitClient.removeCategories([category.name]), failed: t('Failed to delete category') })
+          .then(() => { toast.success(t('Category deleted')) }, () => undefined)}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </ConfirmAction>
@@ -73,22 +74,22 @@ export function CategoriesTagsDialog({ open, onOpenChange }: { open: boolean; on
     e.preventDefault()
     const name = newCategory.trim()
     if (!name) {
-      toast.error('Enter a category name')
+      toast.error(t('Enter a category name'))
       return
     }
-    action.mutateAsync({ work: () => qbitClient.createCategory(name, newCategoryPath.trim()), failed: 'Failed to create category' })
-      .then(() => { setNewCategory(''); setNewCategoryPath(''); toast.success('Category created') }, () => undefined)
+    action.mutateAsync({ work: () => qbitClient.createCategory(name, newCategoryPath.trim()), failed: t('Failed to create category') })
+      .then(() => { setNewCategory(''); setNewCategoryPath(''); toast.success(t('Category created')) }, () => undefined)
   }
 
   const addTags = (e: FormEvent) => {
     e.preventDefault()
     const list = parseTags(newTags)
     if (list.length === 0) {
-      toast.error('Enter at least one tag')
+      toast.error(t('Enter at least one tag'))
       return
     }
-    action.mutateAsync({ work: () => qbitClient.createTags(list), failed: 'Failed to create tags' })
-      .then(() => { setNewTags(''); toast.success(list.length === 1 ? 'Tag created' : 'Tags created') }, () => undefined)
+    action.mutateAsync({ work: () => qbitClient.createTags(list), failed: t('Failed to create tags') })
+      .then(() => { setNewTags(''); toast.success(list.length === 1 ? t('Tag created') : t('Tags created')) }, () => undefined)
   }
 
   const categoryList = Object.values(categories ?? {}).sort((a, b) => a.name.localeCompare(b.name))
@@ -97,42 +98,42 @@ export function CategoriesTagsDialog({ open, onOpenChange }: { open: boolean; on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[80vh] max-w-lg flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Categories and tags</DialogTitle>
-          <DialogDescription>Changes apply to every torrent.</DialogDescription>
+          <DialogTitle>{t('Categories and tags')}</DialogTitle>
+          <DialogDescription>{t('Changes apply to every torrent.')}</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto text-sm">
           <section className="space-y-2">
-            <h3 className="font-medium">Categories</h3>
+            <h3 className="font-medium">{t('Categories')}</h3>
             {categoryList.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No categories</p>
+              <p className="text-xs text-muted-foreground">{t('No categories')}</p>
             ) : (
               <ul className="divide-y">{categoryList.map(category => <CategoryRow key={category.name} category={category} />)}</ul>
             )}
             <form onSubmit={addCategory} className="space-y-2 border-t pt-3">
-              <Input aria-label="New category name" placeholder="New category name" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="h-8 text-sm" />
-              <Input aria-label="Save path for the new category" placeholder="Save path (blank = default)" value={newCategoryPath} onChange={(e) => setNewCategoryPath(e.target.value)} className="h-8 text-sm" />
-              <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>Create category</Button>
+              <Input aria-label={t('New category name')} placeholder={t('New category name')} value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="h-8 text-sm" />
+              <Input aria-label={t('Save path for the new category')} placeholder={t('Save path (blank = default)')} value={newCategoryPath} onChange={(e) => setNewCategoryPath(e.target.value)} className="h-8 text-sm" />
+              <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>{t('Create category')}</Button>
             </form>
           </section>
 
           <section className="space-y-2">
-            <h3 className="font-medium">Tags</h3>
+            <h3 className="font-medium">{t('Tags')}</h3>
             {!tags?.length ? (
-              <p className="text-xs text-muted-foreground">No tags</p>
+              <p className="text-xs text-muted-foreground">{t('No tags')}</p>
             ) : (
               <ul className="flex flex-wrap gap-2">
                 {tags.map(tag => (
                   <li key={tag} className="flex items-center gap-0.5 rounded-md border pl-2">
                     <span className="break-all">{tag}</span>
                     <ConfirmAction
-                      label={`Delete tag ${tag}`}
-                      title={`Delete the ${tag} tag?`}
-                      message="It will be removed from every torrent."
-                      confirmLabel="Delete"
+                      label={t('Delete tag {tag}', { tag })}
+                      title={t('Delete the {tag} tag?', { tag })}
+                      message={t('It will be removed from every torrent.')}
+                      confirmLabel={t('Delete')}
                       disabled={action.isPending}
-                      onConfirm={() => action.mutateAsync({ work: () => qbitClient.deleteTags([tag]), failed: 'Failed to delete tag' })
-                        .then(() => { toast.success('Tag deleted') }, () => undefined)}
+                      onConfirm={() => action.mutateAsync({ work: () => qbitClient.deleteTags([tag]), failed: t('Failed to delete tag') })
+                        .then(() => { toast.success(t('Tag deleted')) }, () => undefined)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </ConfirmAction>
@@ -141,14 +142,14 @@ export function CategoriesTagsDialog({ open, onOpenChange }: { open: boolean; on
               </ul>
             )}
             <form onSubmit={addTags} className="flex gap-2 border-t pt-3">
-              <Input aria-label="New tags, separated by commas" placeholder="New tags, separated by commas" value={newTags} onChange={(e) => setNewTags(e.target.value)} className="h-8 text-sm" />
-              <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>Create</Button>
+              <Input aria-label={t('New tags, separated by commas')} placeholder={t('New tags, separated by commas')} value={newTags} onChange={(e) => setNewTags(e.target.value)} className="h-8 text-sm" />
+              <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>{t('Create')}</Button>
             </form>
           </section>
         </div>
 
         <div className="flex justify-end border-t pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('Close')}</Button>
         </div>
       </DialogContent>
     </Dialog>

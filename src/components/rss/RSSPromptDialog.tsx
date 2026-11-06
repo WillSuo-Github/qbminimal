@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
 import { getRSSParent, joinRSSPath } from '@/lib/rss'
 import { rssName, useRSSAction, type Prompt } from './rssActions'
+import { t } from '@/i18n'
 
 const selectClass = 'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-2 text-sm'
 
@@ -34,36 +35,36 @@ export function RSSPromptDialog({ prompt, folders, onClose }: { prompt: Prompt; 
     switch (prompt.kind) {
       case 'addFeed':
         if (!text) return
-        return run(() => qbitClient.addRSSFeed(text, folder), 'Feed added', 'Failed to add feed')
+        return run(() => qbitClient.addRSSFeed(text, folder), t('Feed added'), t('Failed to add feed'))
       case 'addFolder':
-        if (!text || text.includes('\\')) return toast.error('Enter a name without \\')
-        return run(() => qbitClient.addRSSFolder(joinRSSPath(folder, text)), 'Folder created', 'Failed to create folder')
+        if (!text || text.includes('\\')) return toast.error(t('Enter a name without \\'))
+        return run(() => qbitClient.addRSSFolder(joinRSSPath(folder, text)), t('Folder created'), t('Failed to create folder'))
       case 'rename':
-        if (!text || text.includes('\\')) return toast.error('Enter a name without \\')
-        return run(() => qbitClient.moveRSSItem(prompt.path, joinRSSPath(getRSSParent(prompt.path), text)), 'Renamed', 'Failed to rename')
+        if (!text || text.includes('\\')) return toast.error(t('Enter a name without \\'))
+        return run(() => qbitClient.moveRSSItem(prompt.path, joinRSSPath(getRSSParent(prompt.path), text)), 'Renamed', t('Failed to rename'))
       case 'move':
-        return run(() => qbitClient.moveRSSItem(prompt.path, joinRSSPath(value, rssName(prompt.path))), 'Moved', 'Failed to move')
+        return run(() => qbitClient.moveRSSItem(prompt.path, joinRSSPath(value, rssName(prompt.path))), 'Moved', t('Failed to move'))
       case 'url':
         if (!text) return
-        return run(() => qbitClient.setRSSFeedURL(prompt.feed.path, text), 'Feed address changed', 'Failed to change the feed address')
+        return run(() => qbitClient.setRSSFeedURL(prompt.feed.path, text), t('Feed address changed'), t('Failed to change the feed address'))
       case 'interval': {
         const minutes = text === '' ? 0 : Number(text)
-        if (!Number.isInteger(minutes) || minutes < 0) return toast.error('Enter whole minutes, or leave it blank')
-        return run(() => qbitClient.setRSSFeedRefreshInterval(prompt.feed.path, minutes * 60), 'Refresh time saved', 'Failed to save the refresh time')
+        if (!Number.isInteger(minutes) || minutes < 0) return toast.error(t('Enter whole minutes, or leave it blank'))
+        return run(() => qbitClient.setRSSFeedRefreshInterval(prompt.feed.path, minutes * 60), t('Refresh time saved'), t('Failed to save the refresh time'))
       }
       case 'remove':
-        return run(() => qbitClient.removeRSSFeed(prompt.path), prompt.isFolder ? 'Folder removed' : 'Feed removed', 'Failed to remove')
+        return run(() => qbitClient.removeRSSFeed(prompt.path), prompt.isFolder ? t('Folder removed') : t('Feed removed'), t('Failed to remove'))
     }
   }
 
   const titles: Record<Prompt['kind'], string> = {
-    addFeed: 'Add feed',
-    addFolder: 'New folder',
-    rename: 'Rename',
-    move: 'Move to folder',
-    url: 'Change feed address',
-    interval: 'Refresh time',
-    remove: prompt.kind === 'remove' && prompt.isFolder ? 'Remove this folder?' : 'Remove this feed?',
+    addFeed: t('Add feed'),
+    addFolder: t('New folder'),
+    rename: t('Rename'),
+    move: t('Move to folder'),
+    url: t('Change feed address'),
+    interval: t('Refresh time'),
+    remove: prompt.kind === 'remove' && prompt.isFolder ? t('Remove this folder?') : t('Remove this feed?'),
   }
   const movableFolders = prompt.kind === 'move' ? folders.filter(f => f !== prompt.path && !f.startsWith(`${prompt.path}\\`)) : folders
 
@@ -74,38 +75,38 @@ export function RSSPromptDialog({ prompt, folders, onClose }: { prompt: Prompt; 
           <DialogTitle>{titles[prompt.kind]}</DialogTitle>
           {prompt.kind === 'remove' && (
             <DialogDescription>
-              {prompt.isFolder ? `${rssName(prompt.path)} and every feed in it will be removed.` : `${rssName(prompt.path)} will be removed. Torrents it already added stay.`}
+              {prompt.isFolder ? t('{rssName} and every feed in it will be removed.', { rssName: rssName(prompt.path) }) : t('{rssName} will be removed. Torrents it already added stay.', { rssName: rssName(prompt.path) })}
             </DialogDescription>
           )}
-          {prompt.kind === 'interval' && <DialogDescription>Leave it blank to use the time set in Settings &gt; RSS.</DialogDescription>}
+          {prompt.kind === 'interval' && <DialogDescription>{t('Leave it blank to use the time set in Settings > RSS.')}</DialogDescription>}
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           {prompt.kind === 'move' ? (
-            <select aria-label="Folder" value={value} onChange={(e) => setValue(e.target.value)} className={selectClass}>
-              <option value="">Top level</option>
+            <select aria-label={t('Folder')} value={value} onChange={(e) => setValue(e.target.value)} className={selectClass}>
+              <option value="">{t('Top level')}</option>
               {movableFolders.map(f => <option key={f} value={f}>{f.replaceAll('\\', ' / ')}</option>)}
             </select>
           ) : prompt.kind !== 'remove' && (
             <div className="space-y-1">
               <Label htmlFor="rss-prompt" className="text-xs text-muted-foreground">
-                {prompt.kind === 'addFeed' || prompt.kind === 'url' ? 'Feed address' : prompt.kind === 'interval' ? 'Minutes' : 'Name'}
+                {prompt.kind === 'addFeed' || prompt.kind === 'url' ? t('Feed address') : prompt.kind === 'interval' ? t('Minutes') : t('Name')}
               </Label>
-              <Input id="rss-prompt" autoFocus type={prompt.kind === 'interval' ? 'number' : 'text'} min={0} value={value} placeholder={prompt.kind === 'interval' ? 'Default' : undefined} onChange={(e) => setValue(e.target.value)} />
+              <Input id="rss-prompt" autoFocus type={prompt.kind === 'interval' ? 'number' : 'text'} min={0} value={value} placeholder={prompt.kind === 'interval' ? t('Default') : undefined} onChange={(e) => setValue(e.target.value)} />
             </div>
           )}
           {(prompt.kind === 'addFeed' || prompt.kind === 'addFolder') && folders.length > 0 && (
             <div className="space-y-1">
-              <Label htmlFor="rss-prompt-folder" className="text-xs text-muted-foreground">In folder</Label>
+              <Label htmlFor="rss-prompt-folder" className="text-xs text-muted-foreground">{t('In folder')}</Label>
               <select id="rss-prompt-folder" value={folder} onChange={(e) => setFolder(e.target.value)} className={selectClass}>
-                <option value="">Top level</option>
+                <option value="">{t('Top level')}</option>
                 {folders.map(f => <option key={f} value={f}>{f.replaceAll('\\', ' / ')}</option>)}
               </select>
             </div>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t('Cancel')}</Button>
             <Button type="submit" variant={prompt.kind === 'remove' ? 'destructive' : 'default'} disabled={action.isPending}>
-              {prompt.kind === 'remove' ? 'Remove' : 'Save'}
+              {prompt.kind === 'remove' ? t('Remove') : t('Save')}
             </Button>
           </DialogFooter>
         </form>

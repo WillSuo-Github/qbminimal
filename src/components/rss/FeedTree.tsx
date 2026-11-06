@@ -5,6 +5,7 @@ import { getRSSParent } from '@/lib/rss'
 import { cn } from '@/lib/utils'
 import type { RSSFeed } from '@/types'
 import { rssName, type Prompt } from './rssActions'
+import { t } from '@/i18n'
 
 const STEP = 12
 
@@ -23,7 +24,7 @@ export function FeedTree({ feeds, folders, selected, onSelect, onRefresh, onMark
   const menu = (label: string, items: [string, () => void, boolean?][]) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-label={`Actions for ${label}`} title="Actions" onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" aria-label={t('Actions for {label}', { label })} title={t('Actions')} onClick={(e) => e.stopPropagation()}>
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -48,19 +49,19 @@ export function FeedTree({ feeds, folders, selected, onSelect, onRefresh, onMark
           <span className="block truncate text-sm font-medium">{feed.title}</span>
           <span className="block truncate text-xs text-muted-foreground">{feed.url}</span>
           <span className="mt-1 flex flex-wrap gap-1 text-xs">
-            {feed.unreadCount > 0 && <span className="rounded bg-primary px-1.5 py-0.5 text-primary-foreground">{feed.unreadCount} new</span>}
-            {feed.isLoading && <span className="text-muted-foreground">Refreshing...</span>}
-            {feed.hasError && <span className="text-destructive">Couldn't fetch</span>}
+            {feed.unreadCount > 0 && <span className="rounded bg-primary px-1.5 py-0.5 text-primary-foreground">{t('{count} new', { count: feed.unreadCount })}</span>}
+            {feed.isLoading && <span className="text-muted-foreground">{t('Refreshing...')}</span>}
+            {feed.hasError && <span className="text-destructive">{t('Couldn\'t fetch')}</span>}
           </span>
         </span>
         {menu(feed.title, [
-          ['Refresh', () => onRefresh(feed.path, 'Refreshing feed')],
-          ['Mark all as read', () => onMarkRead(feed.path)],
-          ['Rename', () => onPrompt({ kind: 'rename', path: feed.path, isFolder: false })],
-          ['Move to folder', () => onPrompt({ kind: 'move', path: feed.path })],
-          ['Change address', () => onPrompt({ kind: 'url', feed })],
-          ['Refresh time', () => onPrompt({ kind: 'interval', feed })],
-          ['Remove', () => onPrompt({ kind: 'remove', path: feed.path, isFolder: false }), true],
+          [t('Refresh'), () => onRefresh(feed.path, t('Refreshing feed'))],
+          [t('Mark all as read'), () => onMarkRead(feed.path)],
+          [t('Rename'), () => onPrompt({ kind: 'rename', path: feed.path, isFolder: false })],
+          [t('Move to folder'), () => onPrompt({ kind: 'move', path: feed.path })],
+          [t('Change address'), () => onPrompt({ kind: 'url', feed })],
+          [t('Refresh time'), () => onPrompt({ kind: 'interval', feed })],
+          [t('Remove'), () => onPrompt({ kind: 'remove', path: feed.path, isFolder: false }), true],
         ])}
       </div>
     </li>
@@ -74,12 +75,12 @@ export function FeedTree({ feeds, folders, selected, onSelect, onRefresh, onMark
           <div className="flex items-center gap-1 text-sm font-medium" style={{ marginLeft: depth * STEP }}>
             <Folder className="h-4 w-4 text-yellow-500" />
             <span className="min-w-0 flex-1 truncate">{rssName(path)}</span>
-            {menu(`folder ${rssName(path)}`, [
-              ['Refresh', () => onRefresh(path, 'Refreshing folder')],
-              ['Mark all as read', () => onMarkRead(path)],
-              ['Rename', () => onPrompt({ kind: 'rename', path, isFolder: true })],
-              ['Move to folder', () => onPrompt({ kind: 'move', path })],
-              ['Remove', () => onPrompt({ kind: 'remove', path, isFolder: true }), true],
+            {menu(t('folder {name}', { name: rssName(path) }), [
+              [t('Refresh'), () => onRefresh(path, t('Refreshing folder'))],
+              [t('Mark all as read'), () => onMarkRead(path)],
+              [t('Rename'), () => onPrompt({ kind: 'rename', path, isFolder: true })],
+              [t('Move to folder'), () => onPrompt({ kind: 'move', path })],
+              [t('Remove'), () => onPrompt({ kind: 'remove', path, isFolder: true }), true],
             ])}
           </div>
           <ul className="space-y-2">{level(path, depth + 1)}</ul>
@@ -89,6 +90,6 @@ export function FeedTree({ feeds, folders, selected, onSelect, onRefresh, onMark
     </>
   )
 
-  if (feeds.length === 0 && folders.length === 0) return <p className="text-sm text-muted-foreground">No feeds yet. Add one with +.</p>
+  if (feeds.length === 0 && folders.length === 0) return <p className="text-sm text-muted-foreground">{t('No feeds yet. Add one with +.')}</p>
   return <ul className="space-y-2">{level('', 0)}</ul>
 }

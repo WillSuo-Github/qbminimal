@@ -12,15 +12,18 @@ import { qbitClient } from '@/lib/api'
 import { PREFERENCE_SECTIONS, getChangedPreferences, getSupportedPrefs, toFormValue, type PrefDef } from '@/lib/preferences'
 import { PreferenceField } from './PreferenceField'
 import { PageHeader } from '@/components/PageHeader'
+import { NativeSelect } from '@/components/NativeSelect'
+import { BrowserSettings } from './BrowserSettings'
+import { chosenLanguage, LANGUAGES, setLanguage, t, type LanguageChoice } from '@/i18n'
 
 // System is the default, so it comes first.
 const themeOptions = [
-  { value: 'system', label: 'System', icon: Monitor },
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: t('System'), icon: Monitor },
+  { value: 'light', label: t('Light'), icon: Sun },
+  { value: 'dark', label: t('Dark'), icon: Moon },
 ]
 
-const SECTIONS = [{ id: 'app', title: 'App' }, ...PREFERENCE_SECTIONS.map(({ id, title }) => ({ id, title }))]
+const SECTIONS = [{ id: 'app', title: t('App') }, ...PREFERENCE_SECTIONS.map(({ id, title }) => ({ id, title }))]
 
 function AppSection() {
   const { theme, setTheme } = useTheme()
@@ -35,8 +38,8 @@ function AppSection() {
     ['qbminimal', `v${__APP_VERSION__}`],
     ['qBittorrent', qbittorrentVersion],
     ['Web API', webApiVersion],
-    ['Running for', process?.launch_time ? formatDuration(now - process.launch_time) : undefined],
-    ['Platform', build ? `${build.platform}, ${build.bitness}-bit` : undefined],
+    [t('Running for'), process?.launch_time ? formatDuration(now - process.launch_time) : undefined],
+    [t('Platform'), build ? t('{platform}, {bitness}-bit', { platform: build.platform, bitness: build.bitness }) : undefined],
     ['libtorrent', build?.libtorrent as string | undefined],
     ['Qt', build?.qt as string | undefined],
     ['Boost', build?.boost as string | undefined],
@@ -48,13 +51,13 @@ function AppSection() {
     <div className="space-y-3">
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>Follows your device unless you choose light or dark</CardDescription>
+          <CardTitle>{t('Appearance')}</CardTitle>
+          <CardDescription>{t('Theme and language follow your device unless you choose')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Label>Theme</Label>
-            <div className="flex flex-wrap gap-1" role="group" aria-label="Theme">
+            <Label>{t('Theme')}</Label>
+            <div className="flex flex-wrap gap-1" role="group" aria-label={t('Theme')}>
               {themeOptions.map(({ value, label, icon: Icon }) => (
                 <Button key={value} variant={theme === value ? 'secondary' : 'outline'} size="sm" aria-pressed={theme === value} onClick={() => setTheme(value)} className="gap-2">
                   <Icon className="h-4 w-4" />
@@ -63,12 +66,22 @@ function AppSection() {
               ))}
             </div>
           </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="language">{t('Language')}</Label>
+            {/* Changing it reloads the page, so every text is redrawn in the new language. */}
+            <NativeSelect id="language" value={chosenLanguage()} onChange={(e) => setLanguage(e.target.value as LanguageChoice)}>
+              <option value="auto">{t('Same as the browser')}</option>
+              {LANGUAGES.map(language => <option key={language.code} value={language.code}>{language.name}</option>)}
+            </NativeSelect>
+          </div>
         </CardContent>
       </Card>
 
+      <BrowserSettings />
+
       <Card>
         <CardHeader>
-          <CardTitle>About</CardTitle>
+          <CardTitle>{t('About')}</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="space-y-1 text-sm">
@@ -92,8 +105,8 @@ function PreferencesSection({ sectionId, edits, setEdits }: { sectionId: string;
   const save = useSavePreferences()
   const section = PREFERENCE_SECTIONS.find(s => s.id === sectionId)
 
-  if (isLoading) return <p className="py-8 text-center text-muted-foreground">Loading settings...</p>
-  if (isError || !original || !section) return <p className="py-8 text-center text-muted-foreground">Couldn't load qBittorrent's settings</p>
+  if (isLoading) return <p className="py-8 text-center text-muted-foreground">{t('Loading settings...')}</p>
+  if (isError || !original || !section) return <p className="py-8 text-center text-muted-foreground">{t('Couldn\'t load qBittorrent\'s settings')}</p>
 
   const valueFor = (def: PrefDef) => (def.key in edits ? edits[def.key] : toFormValue(def, original[def.key]))
   const getValue = (key: string) => (key in edits ? edits[key] : original[key])
@@ -104,19 +117,19 @@ function PreferencesSection({ sectionId, edits, setEdits }: { sectionId: string;
 
   const submit = () => {
     if (invalid.length) {
-      toast.error('Check these settings', { description: invalid.join(', ') })
+      toast.error(t('Check these settings'), { description: invalid.join(', ') })
       return
     }
     const password = changes.web_ui_password
     if (password !== undefined && (typeof password !== 'string' || password.length < 6)) {
-      toast.error('The new password needs at least 6 characters')
+      toast.error(t('The new password needs at least 6 characters'))
       return
     }
     if (!Object.keys(changes).length) return
     save.mutate(changes, {
       onSuccess: () => {
         setEdits(() => ({}))
-        toast.success('Settings saved')
+        toast.success(t('Settings saved'))
       },
     })
   }
@@ -150,10 +163,10 @@ function PreferencesSection({ sectionId, edits, setEdits }: { sectionId: string;
 
       {(changeCount > 0 || invalid.length > 0) && (
         <div className="sticky bottom-2 max-md:bottom-[calc(var(--bottom-nav-height,4rem)+0.5rem)] z-10 flex items-center justify-between gap-2 rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur">
-          <span className="text-sm">{changeCount === 1 ? '1 unsaved change' : `${changeCount} unsaved changes`}</span>
+          <span className="text-sm">{changeCount === 1 ? t('1 unsaved change') : t('{changeCount} unsaved changes', { changeCount })}</span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEdits(() => ({}))}>Discard</Button>
-            <Button size="sm" disabled={save.isPending} onClick={submit}>{save.isPending ? 'Saving...' : 'Save'}</Button>
+            <Button variant="outline" size="sm" onClick={() => setEdits(() => ({}))}>{t('Discard')}</Button>
+            <Button size="sm" disabled={save.isPending} onClick={submit}>{save.isPending ? t('Saving...') : t('Save')}</Button>
           </div>
         </div>
       )}
@@ -167,8 +180,8 @@ export function SettingsView() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Settings" description="This app's look, and qBittorrent's own options" />
-      <nav aria-label="Settings sections" className="flex flex-wrap gap-1">
+      <PageHeader title={t('Settings')} description={t('This app\'s look, and qBittorrent\'s own options')} />
+      <nav aria-label={t('Settings sections')} className="flex flex-wrap gap-1">
         {SECTIONS.map(section => (
           <Button key={section.id} size="sm" variant={sectionId === section.id ? 'secondary' : 'ghost'} aria-current={sectionId === section.id ? 'page' : undefined} onClick={() => setSectionId(section.id)}>
             {section.title}

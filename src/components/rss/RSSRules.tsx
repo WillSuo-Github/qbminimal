@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast'
 import type { RSSRule } from '@/types'
 import { RuleExtras } from './RuleExtras'
 import { exportRules, parseRulesFile } from '@/lib/rssRulesFile'
+import { t } from '@/i18n'
 
 const EMPTY_RULE: RSSRule = { enabled: true, mustContain: '', mustNotContain: '', useRegex: false, affectedFeeds: [], assignedCategory: '', savePath: '' }
 
@@ -51,7 +52,7 @@ export function RSSRules() {
     if (!file) return
     const parsed = parseRulesFile(await file.text())
     if (typeof parsed === 'string') {
-      toast.error("Couldn't import rules", { description: parsed })
+      toast.error(t('Couldn\'t import rules'), { description: parsed })
       return
     }
     setImporting(true)
@@ -67,8 +68,8 @@ export function RSSRules() {
     }
     setImporting(false)
     const imported = names.length - failed
-    if (failed > 0) toast.warning(`Imported ${imported} of ${names.length} rules`, { description: `${failed} couldn't be saved.` })
-    else toast.success(imported === 1 ? 'Imported 1 rule' : `Imported ${imported} rules`, { description: replaced > 0 ? `${replaced} replaced a rule with the same name.` : undefined })
+    if (failed > 0) toast.warning(t('Imported {imported} of {length} rules', { imported, length: names.length }), { description: t('{failed} couldn\'t be saved.', { failed }) })
+    else toast.success(imported === 1 ? t('Imported 1 rule') : t('Imported {imported} rules', { imported }), { description: replaced > 0 ? t('{replaced} replaced a rule with the same name.', { replaced }) : undefined })
   }
   const update = (patch: Partial<RSSRule>) => setEditing(current => current && { ...current, rule: { ...current.rule, ...patch } })
 
@@ -83,7 +84,7 @@ export function RSSRules() {
     const name = editing.name.trim()
     if (!name) return
     if (editing.isNew && rules?.[name]) {
-      toast.error('A rule with this name already exists')
+      toast.error(t('A rule with this name already exists'))
       return
     }
     // Newer qBittorrent versions keep these in torrentParams, which takes priority when present.
@@ -93,10 +94,10 @@ export function RSSRules() {
       : rule
     try {
       await setRule.mutateAsync({ name, rule: def })
-      toast.success('Rule saved')
+      toast.success(t('Rule saved'))
       setEditorOpen(false)
     } catch (error) {
-      toast.error('Failed to save rule', { description: error instanceof Error ? error.message : undefined })
+      toast.error(t('Failed to save rule'), { description: error instanceof Error ? error.message : undefined })
     }
   }
 
@@ -104,26 +105,26 @@ export function RSSRules() {
     if (!removing) return
     try {
       await removeRule.mutateAsync(removing)
-      toast('Rule removed')
+      toast(t('Rule removed'))
       setRemoveOpen(false)
     } catch (error) {
-      toast.error('Failed to remove rule', { description: error instanceof Error ? error.message : undefined })
+      toast.error(t('Failed to remove rule'), { description: error instanceof Error ? error.message : undefined })
     }
   }
 
   return (
     <Card className="gap-2">
       <CardHeader className="flex items-center justify-between">
-        <CardTitle>Download rules</CardTitle>
+        <CardTitle>{t('Download rules')}</CardTitle>
         <div className="flex gap-1">
         <input ref={importInput} type="file" accept=".json,application/json" className="hidden" onChange={importFile} />
-        <Button size="sm" variant="outline" aria-label="Import rules" title="Import rules from a file" disabled={importing} onClick={() => importInput.current?.click()}>
+        <Button size="sm" variant="outline" aria-label={t('Import rules')} title={t('Import rules from a file')} disabled={importing} onClick={() => importInput.current?.click()}>
           <Upload className="h-4 w-4" />
         </Button>
-        <Button size="sm" variant="outline" aria-label="Export rules" title="Export rules to a file" disabled={!rules || Object.keys(rules).length === 0} onClick={download}>
+        <Button size="sm" variant="outline" aria-label={t('Export rules')} title={t('Export rules to a file')} disabled={!rules || Object.keys(rules).length === 0} onClick={download}>
           <Download className="h-4 w-4" />
         </Button>
-        <Button size="sm" variant="outline" aria-label="Add rule" title="Add rule" onClick={() => open({ name: '', isNew: true, rule: EMPTY_RULE })}>
+        <Button size="sm" variant="outline" aria-label={t('Add rule')} title={t('Add rule')} onClick={() => open({ name: '', isNew: true, rule: EMPTY_RULE })}>
           <Plus className="h-4 w-4" />
         </Button>
         </div>
@@ -131,7 +132,7 @@ export function RSSRules() {
 
       <CardContent>
       {Object.keys(rules ?? {}).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No rules configured</p>
+        <p className="text-sm text-muted-foreground">{t('No rules configured')}</p>
       ) : (
         <ul className="divide-y">
         {Object.entries(rules ?? {}).map(([name, rule]) => (
@@ -139,11 +140,11 @@ export function RSSRules() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{name}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {rule.enabled ? 'On' : 'Off'}{rule.mustContain ? ` · Must contain: ${rule.mustContain}` : ''}
+                  {rule.enabled ? t('On') : t('Off')}{rule.mustContain ? t(' · Must contain: {mustContain}', { mustContain: rule.mustContain }) : ''}
                 </p>
               </div>
               <RuleExtras name={name} existing={Object.keys(rules ?? {})} />
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit ${name}`} title="Edit" onClick={() => open({
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('Edit {name}', { name })} title={t('Edit')} onClick={() => open({
                 name,
                 isNew: false,
                 rule: {
@@ -155,7 +156,7 @@ export function RSSRules() {
               })}>
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Delete ${name}`} title="Delete" onClick={() => { setRemoving(name); setRemoveOpen(true) }}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('Delete {name}', { name })} title={t('Delete')} onClick={() => { setRemoving(name); setRemoveOpen(true) }}>
                 <Trash2 className="h-4 w-4" />
               </Button>
           </li>
@@ -166,46 +167,46 @@ export function RSSRules() {
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing?.isNew ? 'Add rule' : 'Edit rule'}</DialogTitle>
-            <DialogDescription>Downloads matching articles from the selected feeds.</DialogDescription>
+            <DialogTitle>{editing?.isNew ? t('Add rule') : t('Edit rule')}</DialogTitle>
+            <DialogDescription>{t('Downloads matching articles from the selected feeds.')}</DialogDescription>
           </DialogHeader>
           {editing && (
             <form onSubmit={save} className="space-y-3">
               <div className="space-y-1">
-                <Label htmlFor="rule-name">Name</Label>
+                <Label htmlFor="rule-name">{t('Name')}</Label>
                 <Input id="rule-name" required disabled={!editing.isNew} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="rule-contain">Must contain</Label>
+                <Label htmlFor="rule-contain">{t('Must contain')}</Label>
                 <Input id="rule-contain" value={editing.rule.mustContain} onChange={(e) => update({ mustContain: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="rule-not-contain">Must not contain</Label>
+                <Label htmlFor="rule-not-contain">{t('Must not contain')}</Label>
                 <Input id="rule-not-contain" value={editing.rule.mustNotContain} onChange={(e) => update({ mustNotContain: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="rule-category">Category</Label>
+                <Label htmlFor="rule-category">{t('Category')}</Label>
                 <select id="rule-category" value={editing.rule.assignedCategory} onChange={(e) => update({ assignedCategory: e.target.value })} className="border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-2 text-sm">
-                  <option value="">No category</option>
+                  <option value="">{t('No category')}</option>
                   {editing.rule.assignedCategory && !categories?.[editing.rule.assignedCategory] && <option value={editing.rule.assignedCategory}>{editing.rule.assignedCategory}</option>}
                   {Object.keys(categories ?? {}).map(category => <option key={category} value={category}>{category}</option>)}
                 </select>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="rule-path">Save location</Label>
+                <Label htmlFor="rule-path">{t('Save location')}</Label>
                 <Input id="rule-path" value={editing.rule.savePath} onChange={(e) => update({ savePath: e.target.value })} />
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox id="rule-regex" checked={editing.rule.useRegex} onCheckedChange={(checked) => update({ useRegex: !!checked })} />
-                <Label htmlFor="rule-regex">Use regular expressions</Label>
+                <Label htmlFor="rule-regex">{t('Use regular expressions')}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox id="rule-enabled" checked={editing.rule.enabled} onCheckedChange={(checked) => update({ enabled: !!checked })} />
-                <Label htmlFor="rule-enabled">Rule is on</Label>
+                <Label htmlFor="rule-enabled">{t('Rule is on')}</Label>
               </div>
               <fieldset className="space-y-1">
-                <legend className="text-sm font-medium">Feeds</legend>
-                {feeds.length === 0 && <p className="text-xs text-muted-foreground">Add a feed first, so this rule has something to match.</p>}
+                <legend className="text-sm font-medium">{t('Feeds')}</legend>
+                {feeds.length === 0 && <p className="text-xs text-muted-foreground">{t('Add a feed first, so this rule has something to match.')}</p>}
                 {feeds.map(feed => (
                   <div key={feed.uid} className="flex items-center gap-2">
                     <Checkbox
@@ -222,8 +223,8 @@ export function RSSRules() {
                 ))}
               </fieldset>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditorOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={setRule.isPending}>Save</Button>
+                <Button type="button" variant="outline" onClick={() => setEditorOpen(false)}>{t('Cancel')}</Button>
+                <Button type="submit" disabled={setRule.isPending}>{t('Save')}</Button>
               </DialogFooter>
             </form>
           )}
@@ -233,12 +234,12 @@ export function RSSRules() {
       <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete this rule?</DialogTitle>
+            <DialogTitle>{t('Delete this rule?')}</DialogTitle>
             <DialogDescription>{removing}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemoveOpen(false)}>Cancel</Button>
-            <Button variant="destructive" disabled={removeRule.isPending} onClick={confirmRemove}>Delete</Button>
+            <Button variant="outline" onClick={() => setRemoveOpen(false)}>{t('Cancel')}</Button>
+            <Button variant="destructive" disabled={removeRule.isPending} onClick={confirmRemove}>{t('Delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

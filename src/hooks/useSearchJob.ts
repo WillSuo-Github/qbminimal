@@ -4,6 +4,7 @@ import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
 import { getSearchEngineError } from '@/lib/searchErrors'
 import { rememberSearchPattern } from '@/lib/searchPatterns'
+import { t } from '@/i18n'
 
 // Searches longer than this are stopped, keeping what they found.
 const TIME_LIMIT_MS = 60_000
@@ -31,8 +32,8 @@ export function useSearchJob() {
     const warnings = await qbitClient.getLogWarnings(current.logMark).catch(() => [])
     const problem = warnings.map(entry => getSearchEngineError(entry.message)).find(Boolean)
     if (!problem) return
-    if (found > 0) toast.warning('A search plugin failed, so results may be incomplete.', { description: problem })
-    else toast.error('Search failed.', { description: problem })
+    if (found > 0) toast.warning(t('A search plugin failed, so results may be incomplete.'), { description: problem })
+    else toast.error(t('Search failed.'), { description: problem })
   }
 
   const results = useQuery({
@@ -48,7 +49,7 @@ export function useSearchJob() {
           void finish(current, found)
         } else if (Date.now() - current.startedAt > TIME_LIMIT_MS) {
           await qbitClient.stopSearch(current.id).catch(() => undefined)
-          toast.warning('The search ran for a minute, so it was stopped. These are the results so far.')
+          toast.warning(t('The search ran for a minute, so it was stopped. These are the results so far.'))
           void finish({ ...current, logMark: null }, found)
         }
       }
@@ -60,7 +61,7 @@ export function useSearchJob() {
     // Checked first only to explain a search that can't find anything.
     const installed = await qbitClient.searchPlugins().catch(() => null)
     if (installed && !installed.some(plugin => plugin.enabled)) {
-      toast.error(installed.length ? 'Every search plugin is turned off. Turn one on under Manage plugins.' : 'No search plugins are installed. Add one under Manage plugins.')
+      toast.error(installed.length ? t('Every search plugin is turned off. Turn one on under Manage plugins.') : t('No search plugins are installed. Add one under Manage plugins.'))
       return
     }
     try {
@@ -69,7 +70,7 @@ export function useSearchJob() {
       rememberSearchPattern(id, pattern)
       setJob({ id, running: true, startedAt: Date.now(), logMark: warnings ? warnings.at(-1)?.id ?? -1 : null })
     } catch (error) {
-      toast.error('Search failed.', { description: error instanceof Error ? error.message : undefined })
+      toast.error(t('Search failed.'), { description: error instanceof Error ? error.message : undefined })
     }
   }
 
@@ -78,9 +79,9 @@ export function useSearchJob() {
     setJob({ ...job, running: false })
     try {
       await qbitClient.stopSearch(job.id)
-      toast.info('Search stopped')
+      toast.info(t('Search stopped'))
     } catch {
-      toast.error("Couldn't stop the search in qBittorrent")
+      toast.error(t('Couldn\'t stop the search in qBittorrent'))
     }
   }
 

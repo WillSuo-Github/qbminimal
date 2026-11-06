@@ -45,6 +45,11 @@ export function useTorrentList(torrents: Torrent[], trackerMap: Record<string, s
       setFilters(current => ({ ...current, [key]: value }))
       setRequestedPage(1)
     },
+    // A saved view sets them all at once.
+    applyFilters: (next: TorrentFilters) => {
+      setFilters({ ...NO_FILTERS, ...next })
+      setRequestedPage(1)
+    },
     clearFilters: () => {
       setFilters(NO_FILTERS)
       setRequestedPage(1)

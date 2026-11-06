@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import type { PrefDef } from '@/lib/preferences'
 import { ApiKeyField, CookiesEditor, InterfaceAddressField, NetworkInterfaceField, ScanDirsEditor, ShutdownButton, TestEmailButton, TrackerUrlList } from './CustomFields'
 import { FolderPicker } from './FolderPicker'
+import { t } from '@/i18n'
 
 const selectClass = 'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-2 text-sm disabled:opacity-50'
 
@@ -64,7 +65,7 @@ export function PreferenceField({ def, value, getValue, onChange, disabled, hasU
       control = (
         <div className="flex gap-2">
           <Input id={id} value={String(value ?? '')} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="h-9" />
-          <Button type="button" size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" aria-label={`Browse for ${def.label}`} title="Browse" disabled={disabled} onClick={() => setPicking(true)}>
+          <Button type="button" size="icon" variant="outline" className="h-9 w-9 flex-shrink-0" aria-label={t('Browse for {label}', { label: def.label })} title={t('Browse')} disabled={disabled} onClick={() => setPicking(true)}>
             <FolderOpen className="h-4 w-4" />
           </Button>
           {picking && (
@@ -79,7 +80,7 @@ export function PreferenceField({ def, value, getValue, onChange, disabled, hasU
           control = <ScanDirsEditor value={value} onChange={onChange} disabled={disabled} />
           break
         case 'webUiPassword':
-          control = <Input id={id} type="password" autoComplete="new-password" placeholder="Leave blank to keep the current one" value={String(value ?? '')} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="h-9" />
+          control = <Input id={id} type="password" autoComplete="new-password" placeholder={t('Leave blank to keep the current one')} value={String(value ?? '')} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="h-9" />
           break
         case 'apiKey':
           control = <ApiKeyField value={value} />

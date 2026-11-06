@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
+import { t } from '@/i18n'
 
 function MatchesDialog({ name, onClose }: { name: string; onClose: () => void }) {
   const { data, isLoading, isError } = useQuery({ queryKey: ['rss', 'matches', name], queryFn: () => qbitClient.getRSSMatchingArticles(name) })
@@ -15,15 +16,15 @@ function MatchesDialog({ name, onClose }: { name: string; onClose: () => void })
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Matches for {name}</DialogTitle>
-          <DialogDescription>Articles already in your feeds that this rule matches.</DialogDescription>
+          <DialogTitle>{t('Matches for {name}', { name })}</DialogTitle>
+          <DialogDescription>{t('Articles already in your feeds that this rule matches.')}</DialogDescription>
         </DialogHeader>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">{t('Loading...')}</p>
         ) : isError ? (
-          <p className="text-sm text-muted-foreground">Couldn't check this rule. Save it first if it's new.</p>
+          <p className="text-sm text-muted-foreground">{t('Couldn\'t check this rule. Save it first if it\'s new.')}</p>
         ) : feeds.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing matches yet</p>
+          <p className="text-sm text-muted-foreground">{t('Nothing matches yet')}</p>
         ) : (
           feeds.map(([feed, titles]) => (
             <section key={feed} className="space-y-1">
@@ -48,15 +49,15 @@ function RenameDialog({ name, existing, onClose }: { name: string; existing: str
     e.preventDefault()
     const next = value.trim()
     if (!next || next === name) return onClose()
-    if (existing.includes(next)) return toast.error('A rule with this name already exists')
+    if (existing.includes(next)) return toast.error(t('A rule with this name already exists'))
     setSaving(true)
     try {
       await qbitClient.renameRSSRule(name, next)
       await queryClient.invalidateQueries({ queryKey: ['rss', 'rules'] })
-      toast.success('Rule renamed')
+      toast.success(t('Rule renamed'))
       onClose()
     } catch (err) {
-      toast.error('Failed to rename rule', { description: err instanceof Error ? err.message : undefined })
+      toast.error(t('Failed to rename rule'), { description: err instanceof Error ? err.message : undefined })
     } finally {
       setSaving(false)
     }
@@ -66,13 +67,13 @@ function RenameDialog({ name, existing, onClose }: { name: string; existing: str
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Rename rule</DialogTitle>
+          <DialogTitle>{t('Rename rule')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <Input aria-label="New rule name" autoFocus value={value} onChange={(e) => setValue(e.target.value)} />
+          <Input aria-label={t('New rule name')} autoFocus value={value} onChange={(e) => setValue(e.target.value)} />
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={saving}>Rename</Button>
+            <Button type="button" variant="outline" onClick={onClose}>{t('Cancel')}</Button>
+            <Button type="submit" disabled={saving}>{t('Rename')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -85,10 +86,10 @@ export function RuleExtras({ name, existing }: { name: string; existing: string[
   const [open, setOpen] = useState<'matches' | 'rename' | null>(null)
   return (
     <>
-      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Show matches for ${name}`} title="Show matching articles" onClick={() => setOpen('matches')}>
+      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('Show matches for {name}', { name })} title={t('Show matching articles')} onClick={() => setOpen('matches')}>
         <Eye className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Rename ${name}`} title="Rename" onClick={() => setOpen('rename')}>
+      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('Rename {name}', { name })} title={t('Rename')} onClick={() => setOpen('rename')}>
         <TextCursorInput className="h-4 w-4" />
       </Button>
       {open === 'matches' && <MatchesDialog name={name} onClose={() => setOpen(null)} />}

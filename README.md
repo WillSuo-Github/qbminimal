@@ -7,14 +7,19 @@ Built with React, TypeScript, Vite, and Tailwind CSS.
 ## Features
 
 - **Torrent list** as a table or as cards. In the table you can show, hide, drag, and resize columns, and sort by any of them. The layout is remembered on each device.
-- **Filters** by name, status, category, tag, and tracker, each showing how many torrents it matches.
+- **Filters** by name, status, category, tag, and tracker, each showing how many torrents it matches. Save a set of filters as a **view** to apply it again in one tap.
 - **Torrent details**: pieces, transfer facts, files (choose what to download, rename, and save finished files with qBittorrent 5.3), trackers, peers with country flags, and every per-torrent setting: limits, location, queue, category, tags, and more.
-- **Bulk actions** for several torrents at once.
-- **Add torrents** from links or .torrent files with all of qBittorrent's options, and **create torrents** from files on the server.
+- **Selecting and actions**: click a torrent to open its details in a panel below the list, Ctrl or Cmd-click and Shift-click to select several, and right-click for every action. On phones, tap a torrent for its details and hold one to start selecting.
+- **Bulk actions** for several torrents at once, from the selection bar or the right-click menu.
+- **Add torrents** from links or .torrent files with all of qBittorrent's options. Drop .torrent files anywhere on the page, or let the browser open magnet links here. **Create torrents** from files on the server.
 - **RSS** feeds and folders, articles, and download rules, including import and export.
 - **Search** with qBittorrent's search plugins, and plugin management.
-- **Logs**, statistics, connection status, and the alternative speed limit switch.
+- **Logs**, statistics with a live speed graph, connection status, and the alternative speed limit switch. A notice says when qBittorrent can't be reached.
+- **Notifications** when a torrent finishes, if you turn them on.
+- **Keyboard shortcuts** for the torrent list. Press `?` to see them.
+- **Languages**: English and German. The language follows the browser, or pick one in Settings.
 - **Settings**: every qBittorrent preference, shown only when your qBittorrent version has it.
+- A sidebar you can hide on wide screens.
 - Light and dark themes that follow your device, and a layout made for phones, including when added to the home screen.
 
 ## Requirements
@@ -56,6 +61,12 @@ npm test
 npx tsc -b
 ```
 
+## Translations
+
+The text is translated with `t('English text')`, and each language is a file in `src/i18n` that maps the English text to its translation. To add a language, copy `src/i18n/de.ts`, translate the values, and add the language to `LANGUAGES` and `LOADERS` in `src/i18n/index.ts`. Keep each `{placeholder}` as it is.
+
+`npm run i18n:check` lists text that a language doesn't cover yet.
+
 ## Building a release
 
 ```bash
@@ -63,6 +74,8 @@ npm run package
 ```
 
 This builds into `release/public` and packs it as `qbminimal-release.zip`, the same layout the install steps describe.
+
+Pushing a tag like `v1.1.0` that matches the version in `package.json` runs the same build on GitHub and publishes the zip and its SHA-256 checksum as a release.
 
 `scripts/deploy.sh` copies a release to a server over SSH with `rsync`, then checks that the server is serving it. Put your settings in `.deploy.env`, which git ignores:
 

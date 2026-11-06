@@ -9,11 +9,13 @@ import { qbitClient } from '@/lib/api'
 import { formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { formatBytes } from '@/lib/format'
+import { SpeedChart } from './SpeedChart'
+import { t } from '@/i18n'
 
 const CONNECTION_LABELS: Record<string, { label: string; description: string; dot: string; text: string }> = {
-  connected: { label: 'Connected', description: 'Other peers can reach qBittorrent', dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
-  firewalled: { label: 'Firewalled', description: "Peers can't connect in, so only outgoing connections work", dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  disconnected: { label: 'Disconnected', description: 'qBittorrent has no network connection', dot: 'bg-red-500', text: 'text-red-600 dark:text-red-400' },
+  connected: { label: t('Connected'), description: t('Other peers can reach qBittorrent'), dot: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
+  firewalled: { label: t('Firewalled'), description: t('Peers can\'t connect in, so only outgoing connections work'), dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+  disconnected: { label: t('Disconnected'), description: t('qBittorrent has no network connection'), dot: 'bg-red-500', text: 'text-red-600 dark:text-red-400' },
 }
 
 const size = (bytes: number | undefined) => (bytes === undefined ? '-' : formatBytes(bytes))
@@ -43,9 +45,9 @@ function SessionPauseButton({ paused }: { paused: boolean }) {
     try {
       await (paused ? qbitClient.resumeSession() : qbitClient.pauseSession())
       await queryClient.invalidateQueries({ queryKey: ['torrents'] })
-      toast.success(paused ? 'Transfers resumed' : 'All transfers paused', { description: paused ? undefined : 'Each torrent keeps its own state, so resuming brings back what was running.' })
+      toast.success(paused ? t('Transfers resumed') : t('All transfers paused'), { description: paused ? undefined : t('Each torrent keeps its own state, so resuming brings back what was running.') })
     } catch (e) {
-      toast.error(paused ? "Couldn't resume transfers" : "Couldn't pause transfers", { description: e instanceof Error ? e.message : undefined })
+      toast.error(paused ? t('Couldn\'t resume transfers') : t('Couldn\'t pause transfers'), { description: e instanceof Error ? e.message : undefined })
     } finally {
       setPending(false)
     }
@@ -54,7 +56,7 @@ function SessionPauseButton({ paused }: { paused: boolean }) {
   return (
     <Button type="button" size="sm" variant={paused ? 'default' : 'outline'} disabled={pending} onClick={toggle} className="w-full gap-2">
       {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-      {paused ? 'Resume all transfers' : 'Pause all transfers'}
+      {paused ? t('Resume all transfers') : t('Pause all transfers')}
     </Button>
   )
 }
@@ -68,34 +70,34 @@ export function TorrentStats({ children }: { children: ReactNode }) {
 
   const allGroups: { title: string; rows: [string, string][] }[] = state ? [
     {
-      title: 'All time',
+      title: t('All time'),
       rows: [
-        ['Downloaded', size(state.alltime_dl)],
-        ['Uploaded', size(state.alltime_ul)],
-        ['Ratio', state.global_ratio ?? '-'],
+        [t('Downloaded'), size(state.alltime_dl)],
+        [t('Uploaded'), size(state.alltime_ul)],
+        [t('Ratio'), state.global_ratio ?? '-'],
       ],
     },
     {
-      title: 'This session',
+      title: t('This session'),
       rows: [
-        ['Downloaded', size(state.dl_info_data)],
-        ['Uploaded', size(state.up_info_data)],
-        ['Wasted', size(state.total_wasted_session)],
-        ['Connected peers', count(state.total_peer_connections)],
-        ['Download limit', limit(state.dl_rate_limit)],
-        ['Upload limit', limit(state.up_rate_limit)],
+        [t('Downloaded'), size(state.dl_info_data)],
+        [t('Uploaded'), size(state.up_info_data)],
+        [t('Wasted'), size(state.total_wasted_session)],
+        [t('Connected peers'), count(state.total_peer_connections)],
+        [t('Download limit'), limit(state.dl_rate_limit)],
+        [t('Upload limit'), limit(state.up_rate_limit)],
       ],
     },
     {
-      title: 'Cache and disk',
+      title: t('Cache and disk'),
       rows: [
-        ['Read cache hits', state.read_cache_hits !== undefined ? `${state.read_cache_hits}%` : '-'],
-        ['Read cache overload', state.read_cache_overload !== undefined ? `${state.read_cache_overload}%` : '-'],
-        ['Write cache overload', state.write_cache_overload !== undefined ? `${state.write_cache_overload}%` : '-'],
-        ['Total buffer size', size(state.total_buffers_size)],
-        ['Queued disk jobs', count(state.queued_io_jobs)],
-        ['Average time in queue', state.average_time_queue === undefined ? '-' : `${state.average_time_queue} ms`],
-        ['Total queued size', size(state.total_queued_size)],
+        [t('Read cache hits'), state.read_cache_hits !== undefined ? `${state.read_cache_hits}%` : '-'],
+        [t('Read cache overload'), state.read_cache_overload !== undefined ? `${state.read_cache_overload}%` : '-'],
+        [t('Write cache overload'), state.write_cache_overload !== undefined ? `${state.write_cache_overload}%` : '-'],
+        [t('Total buffer size'), size(state.total_buffers_size)],
+        [t('Queued disk jobs'), count(state.queued_io_jobs)],
+        [t('Average time in queue'), state.average_time_queue === undefined ? '-' : `${state.average_time_queue} ms`],
+        [t('Total queued size'), size(state.total_queued_size)],
       ],
     },
   ] : []
@@ -109,11 +111,11 @@ export function TorrentStats({ children }: { children: ReactNode }) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Statistics</DialogTitle>
+          <DialogTitle>{t('Statistics')}</DialogTitle>
         </DialogHeader>
 
         {!state ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Loading statistics...</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{t('Loading statistics...')}</p>
         ) : (
           <>
             <div className={cn('space-y-2.5 rounded-md border px-3 py-2.5', !connection && 'text-muted-foreground')}>
@@ -121,7 +123,7 @@ export function TorrentStats({ children }: { children: ReactNode }) {
                 <span className={cn('h-2.5 w-2.5 flex-shrink-0 rounded-full', sessionPaused ? 'bg-muted-foreground' : connection?.dot ?? 'bg-muted-foreground')} aria-hidden />
                 <div className="min-w-0">
                   <p className={cn('text-sm font-medium', !sessionPaused && connection?.text)}>
-                    {connection?.label ?? 'Connection status unknown'}{sessionPaused && ', all transfers paused'}
+                    {connection?.label ?? t('Connection status unknown')}{sessionPaused && t(', all transfers paused')}
                   </p>
                   {connection && <p className="text-xs text-muted-foreground">{connection.description}</p>}
                 </div>
@@ -129,12 +131,17 @@ export function TorrentStats({ children }: { children: ReactNode }) {
               {canPauseSession && <SessionPauseButton paused={sessionPaused} />}
             </div>
 
+            <section>
+              <h3 className="mb-1 text-xs font-medium text-muted-foreground">{t('Speed')}</h3>
+              <SpeedChart />
+            </section>
+
             <div className="grid grid-cols-2 gap-2">
-              <Fact icon={<HardDrive className="h-4 w-4" />} label="Free space" value={size(state.free_space_on_disk)} />
-              <Fact icon={<Network className="h-4 w-4" />} label="DHT nodes" value={count(state.dht_nodes)} />
+              <Fact icon={<HardDrive className="h-4 w-4" />} label={t('Free space')} value={size(state.free_space_on_disk)} />
+              <Fact icon={<Network className="h-4 w-4" />} label={t('DHT nodes')} value={count(state.dht_nodes)} />
               {externalAddress && (
                 <div className="col-span-2">
-                  <Fact icon={<Globe className="h-4 w-4" />} label="External address" value={externalAddress} />
+                  <Fact icon={<Globe className="h-4 w-4" />} label={t('External address')} value={externalAddress} />
                 </div>
               )}
             </div>
@@ -154,7 +161,7 @@ export function TorrentStats({ children }: { children: ReactNode }) {
             ))}
 
             {state.average_time_queue !== undefined && state.average_time_queue > 5000 && (
-              <p className="text-xs text-amber-500">Disk jobs are waiting {formatDuration(state.average_time_queue / 1000)} on average, so the disk may be slowing transfers.</p>
+              <p className="text-xs text-amber-500">{t('Disk jobs are waiting {time} on average, so the disk may be slowing transfers.', { time: formatDuration(state.average_time_queue / 1000) })}</p>
             )}
           </>
         )}

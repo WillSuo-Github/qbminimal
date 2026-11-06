@@ -1,4 +1,4 @@
-import { lazy, useState, type ComponentType } from 'react'
+import { lazy, useEffect, useState, type ComponentType } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
@@ -8,6 +8,8 @@ import type { PageId } from '@/components/navigation'
 import { TorrentsView } from '@/components/torrents/TorrentsView'
 import { SessionProvider } from '@/components/SessionProvider'
 import { useSession } from '@/hooks/useSession'
+import { hasIncoming, onIncoming } from '@/lib/incoming'
+import { t } from '@/i18n'
 
 const named = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) => lazy(() => load().then(module => ({ default: module[name] })))
 
@@ -28,9 +30,12 @@ const TOAST_OFFSET = { top: 'calc(env(safe-area-inset-top) + 0.125rem)' }
 
 function Screens() {
   const { status } = useSession()
-  const [page, setPage] = useState<PageId>('torrents')
+  // A magnet link the page was opened for starts on the Add page.
+  const [page, setPage] = useState<PageId>(() => (hasIncoming() ? 'add' : 'torrents'))
+  // So do torrents dropped on the page or handed over later.
+  useEffect(() => onIncoming(() => setPage('add')), [])
 
-  if (status === 'checking') return <p className="grid min-h-dvh place-items-center text-muted-foreground">Connecting...</p>
+  if (status === 'checking') return <p className="grid min-h-dvh place-items-center text-muted-foreground">{t('Connecting...')}</p>
   if (status === 'signedOut') return <LoginForm />
 
   const View = PAGE_VIEWS[page]

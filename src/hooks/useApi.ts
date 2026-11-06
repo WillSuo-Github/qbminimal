@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
-import { qbitClient, type LogLevels } from '@/lib/api'
+import { hasStatus, qbitClient, type LogLevels } from '@/lib/api'
 import { supportsFeature, type ApiFeature } from '@/lib/apiVersion'
 import { parseBannedPeers, removeBannedPeer } from '@/lib/bannedPeers'
+import { findFinished } from '@/lib/finished'
 import { applyMainDataUpdate, type MainData } from '@/lib/mainData'
+import { finishNoticesOn, notifyInBackground } from '@/lib/notify'
 import { PIECE_DONE } from '@/lib/pieces'
-import type { RSSRule } from '@/types'
+import { recordSpeeds } from '@/lib/speedHistory'
+import type { RSSRule, Torrent } from '@/types'
+import { t } from '@/i18n'
 
 // React Query hooks over the API client. Every query only runs once signed in, because the app
 // shows the login form instead of these pages until then.
@@ -45,7 +49,7 @@ export const usePreferences = () => useQuery({
 })
 
 export const useSavePreferences = () =>
-  useServerChange((changes: Record<string, unknown>) => qbitClient.setPreferences(changes), [['preferences'], ['bannedPeers']], 'Failed to save settings')
+  useServerChange((changes: Record<string, unknown>) => qbitClient.setPreferences(changes), [['preferences'], ['bannedPeers']], t('Failed to save settings'))
 
 export const useAppVersion = () => useQuery({ queryKey: ['app', 'version'], queryFn: () => qbitClient.getAppVersion() })
 
@@ -60,6 +64,13 @@ export function useApiFeature(feature: ApiFeature): boolean {
 
 const MAIN_DATA: QueryKey = ['torrents', 'maindata']
 
+// A notification outside the page when it's in the background, a message on it otherwise.
+function announceFinished(torrents: Torrent[]) {
+  for (const torrent of torrents) {
+    if (!notifyInBackground(t('Download finished'), torrent.name)) toast.success(t('Download finished'), { description: torrent.name })
+  }
+}
+
 // One incremental request every two seconds feeds the torrent list, the speeds, and the status.
 // Its key starts with 'torrents', so refreshing ['torrents'] after an action refreshes it too.
 function useMainData<T>(select: (data: MainData) => T) {
@@ -68,7 +79,10 @@ function useMainData<T>(select: (data: MainData) => T) {
     queryKey: MAIN_DATA,
     queryFn: async () => {
       const previous = queryClient.getQueryData<MainData>(MAIN_DATA) ?? null
-      return applyMainDataUpdate(previous, await qbitClient.getMainData(previous?.rid ?? 0))
+      const next = applyMainDataUpdate(previous, await qbitClient.getMainData(previous?.rid ?? 0))
+      recordSpeeds({ time: Date.now(), down: next.serverState.dl_info_speed ?? 0, up: next.serverState.up_info_speed ?? 0 })
+      if (finishNoticesOn()) announceFinished(findFinished(previous?.torrents, next.torrents))
+      return next
     },
     select,
     refetchInterval: FAST,
@@ -81,6 +95,12 @@ const pickTrackers = (data: MainData) => data.trackers
 
 export const useTorrents = () => useMainData(pickTorrents)
 export const useTransferInfo = () => useMainData(pickServerState)
+
+// True while the list's refreshes fail, apart from a signed-out session, which shows the login form.
+export function useConnectionProblem() {
+  const { isError, error } = useMainData(pickServerState)
+  return isError && !hasStatus(error, 403)
+}
 export const useTrackerMap = () => useMainData(pickTrackers)
 
 // --- One torrent ---
@@ -107,10 +127,10 @@ export const useTorrentPieces = (hash: string, torrentComplete: boolean) => useQ
 export const useTorrentAction = () =>
   useServerChange(({ work }: Job) => work(), [['torrents'], ['torrent'], ['bannedPeers'], ['categories'], ['tags']], job => job.failed)
 
-export const usePauseTorrents = () => useServerChange((hashes: string[]) => qbitClient.pauseTorrents(hashes), [['torrents']], 'Failed to pause')
-export const useResumeTorrents = () => useServerChange((hashes: string[]) => qbitClient.resumeTorrents(hashes), [['torrents']], 'Failed to resume')
+export const usePauseTorrents = () => useServerChange((hashes: string[]) => qbitClient.pauseTorrents(hashes), [['torrents']], t('Failed to pause'))
+export const useResumeTorrents = () => useServerChange((hashes: string[]) => qbitClient.resumeTorrents(hashes), [['torrents']], t('Failed to resume'))
 export const useDeleteTorrents = () =>
-  useServerChange(({ hashes, deleteFiles }: { hashes: string[]; deleteFiles?: boolean }) => qbitClient.deleteTorrents(hashes, deleteFiles), [['torrents']], 'Failed to delete')
+  useServerChange(({ hashes, deleteFiles }: { hashes: string[]; deleteFiles?: boolean }) => qbitClient.deleteTorrents(hashes, deleteFiles), [['torrents']], t('Failed to delete'))
 
 export function useSetFilePriority() {
   const queryClient = useQueryClient()
@@ -135,7 +155,7 @@ export const useBannedPeers = () => useQuery({
 export const useUnbanPeer = () => useServerChange(async (ip: string) => {
   const prefs = await qbitClient.getPreferences()
   await qbitClient.setPreferences({ banned_IPs: removeBannedPeer(prefs.banned_IPs, ip) })
-}, [['bannedPeers']], 'Failed to unban peer')
+}, [['bannedPeers']], t('Failed to unban peer'))
 
 // --- Search ---
 

@@ -12,6 +12,7 @@ import { FeedTree } from './FeedTree'
 import { RSSPromptDialog } from './RSSPromptDialog'
 import { useRSSAction, type Prompt } from './rssActions'
 import { RSSRules } from './RSSRules'
+import { t } from '@/i18n'
 
 export function RSSView() {
   const queryClient = useQueryClient()
@@ -29,31 +30,31 @@ export function RSSView() {
   const markRead = (path: string, articleId?: string) =>
     qbitClient.markAsRead(path, articleId).then(() => queryClient.invalidateQueries({ queryKey: ['rss'] }), () => undefined)
 
-  const refresh = (path: string, label: string) => action.mutate({ work: () => qbitClient.refreshRSSItem(path), done: label, failed: 'Failed to refresh' })
+  const refresh = (path: string, label: string) => action.mutate({ work: () => qbitClient.refreshRSSItem(path), done: label, failed: t('Failed to refresh') })
 
   const addTorrent = async (url: string) => {
     try {
       await qbitClient.addTorrentUrl(url)
-      toast.success('Torrent added')
+      toast.success(t('Torrent added'))
       void queryClient.invalidateQueries({ queryKey: ['torrents'] })
     } catch (error) {
-      toast.error("Couldn't add the torrent", { description: error instanceof Error ? error.message : undefined })
+      toast.error(t('Couldn\'t add the torrent'), { description: error instanceof Error ? error.message : undefined })
     }
   }
 
   return (
     <div className="space-y-4">
-      <PageHeader title="RSS" description="Feeds, articles, and rules that download new episodes for you" />
+      <PageHeader title={t('RSS')} description={t('Feeds, articles, and rules that download new episodes for you')} />
 
-      {feedsQuery.isLoading ? <p className="py-8 text-center text-muted-foreground">Loading feeds...</p> : (
+      {feedsQuery.isLoading ? <p className="py-8 text-center text-muted-foreground">{t('Loading feeds...')}</p> : (
         <div className="flex flex-col gap-4 md:flex-row md:items-start">
           <Card className="w-full gap-2 md:w-80">
             <CardHeader className="flex items-center justify-between gap-1">
-              <CardTitle>Feeds</CardTitle>
+              <CardTitle>{t('Feeds')}</CardTitle>
               <div className="flex gap-1">
-                <Button size="sm" variant="outline" aria-label="Refresh all feeds" title="Refresh all feeds" disabled={feeds.length === 0} onClick={() => refresh('', 'Refreshing all feeds')}><RefreshCw className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" aria-label="New folder" title="New folder" onClick={() => setPrompt({ kind: 'addFolder' })}><FolderPlus className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" aria-label="Add feed" title="Add feed" onClick={() => setPrompt({ kind: 'addFeed' })}><Plus className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" aria-label={t('Refresh all feeds')} title={t('Refresh all feeds')} disabled={feeds.length === 0} onClick={() => refresh('', t('Refreshing all feeds'))}><RefreshCw className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" aria-label={t('New folder')} title={t('New folder')} onClick={() => setPrompt({ kind: 'addFolder' })}><FolderPlus className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" aria-label={t('Add feed')} title={t('Add feed')} onClick={() => setPrompt({ kind: 'addFeed' })}><Plus className="h-4 w-4" /></Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -63,12 +64,12 @@ export function RSSView() {
 
           <Card className="min-w-0 flex-1 gap-2">
             <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="min-w-0 truncate">{feed?.title ?? 'Articles'}</CardTitle>
-              {feed && <Button size="sm" variant="ghost" disabled={feed.unreadCount === 0} onClick={() => markRead(feed.path)}>Mark all as read</Button>}
+              <CardTitle className="min-w-0 truncate">{feed?.title ?? t('Articles')}</CardTitle>
+              {feed && <Button size="sm" variant="ghost" disabled={feed.unreadCount === 0} onClick={() => markRead(feed.path)}>{t('Mark all as read')}</Button>}
             </CardHeader>
             <CardContent>
-              {!feed ? <p className="py-8 text-center text-muted-foreground">Pick a feed to see its articles</p>
-                : articlesQuery.isLoading ? <p className="py-8 text-center text-muted-foreground">Loading articles...</p>
+              {!feed ? <p className="py-8 text-center text-muted-foreground">{t('Pick a feed to see its articles')}</p>
+                : articlesQuery.isLoading ? <p className="py-8 text-center text-muted-foreground">{t('Loading articles...')}</p>
                 : <ArticleList articles={articlesQuery.data?.articles ?? []} onOpened={a => { if (!a.isRead) void markRead(feed.path, a.id) }} onDownload={addTorrent} />}
             </CardContent>
           </Card>

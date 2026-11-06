@@ -1,4 +1,5 @@
 import { NO_LIMIT, parseShareLimits, type ShareLimitForm } from './shareLimits'
+import { t } from '@/i18n'
 
 // "" leaves the choice to qBittorrent's own defaults.
 export type TriState = '' | 'true' | 'false'
@@ -61,7 +62,7 @@ export function buildAddParams(options: AddTorrentOptions, links: string[], sour
   if (options.useDownloadPath) params.useDownloadPath = options.useDownloadPath
   if (options.useDownloadPath === 'true' && options.downloadPath.trim()) params.downloadPath = options.downloadPath.trim()
   if (options.rename.trim()) {
-    if (sourceCount !== 1) return 'A new name only works when adding one torrent'
+    if (sourceCount !== 1) return t('A new name only works when adding one torrent')
     params.rename = options.rename.trim()
   }
   if (options.contentLayout) params.contentLayout = options.contentLayout
@@ -82,14 +83,14 @@ export function buildAddParams(options: AddTorrentOptions, links: string[], sour
     const text = options[field].trim()
     if (!text) continue
     const kib = Number(text)
-    if (!Number.isFinite(kib) || kib < 0) return 'Speed limits must be 0 or higher'
+    if (!Number.isFinite(kib) || kib < 0) return t('Speed limits must be 0 or higher')
     // qBittorrent takes bytes per second, and 0 or less means no limit.
     params[key] = kib > 0 ? String(Math.round(kib * 1024)) : String(NO_LIMIT)
   }
 
   if (options.shareLimits.mode !== 'global') {
     const limits = parseShareLimits(options.shareLimits)
-    if (!limits) return 'Check the seeding limits: use 0 or higher, with whole minutes'
+    if (!limits) return t('Check the seeding limits: use 0 or higher, with whole minutes')
     params.ratioLimit = String(limits.ratioLimit)
     params.seedingTimeLimit = String(limits.seedingTimeLimit)
     params.inactiveSeedingTimeLimit = String(limits.inactiveSeedingTimeLimit)
@@ -108,14 +109,14 @@ export interface AddTorrentResult {
 export function describeAddResult(result: unknown, sourceCount: number): { ok: boolean; message: string } {
   if (typeof result === 'string') {
     const ok = result.trim() !== 'Fails.'
-    return { ok, message: ok ? (sourceCount === 1 ? 'Torrent added' : 'Torrents added') : "qBittorrent couldn't add them" }
+    return { ok, message: ok ? (sourceCount === 1 ? t('Torrent added') : t('Torrents added')) : t('qBittorrent couldn\'t add them') }
   }
   const { success_count: added = 0, failure_count: failed = 0, pending_count: pending = 0 } = (result ?? {}) as AddTorrentResult
   const parts: string[] = []
-  if (added) parts.push(`${added} added`)
-  if (pending) parts.push(`${pending} still downloading the .torrent file`)
-  if (failed) parts.push(`${failed} failed`)
-  if (!parts.length) return { ok: true, message: 'Sent to qBittorrent' }
+  if (added) parts.push(t('{count} added', { count: added }))
+  if (pending) parts.push(t('{pending} still downloading the .torrent file', { pending }))
+  if (failed) parts.push(t('{count} failed', { count: failed }))
+  if (!parts.length) return { ok: true, message: t('Sent to qBittorrent') }
   return { ok: failed === 0, message: parts.join(', ') }
 }
 

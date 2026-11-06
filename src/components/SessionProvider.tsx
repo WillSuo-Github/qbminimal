@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { useQueryClient } from '@tanstack/react-query'
 import { SessionContext, type SessionStatus } from '@/hooks/useSession'
 import { qbitClient } from '@/lib/api'
+import { t } from '@/i18n'
 
 // Knows whether the browser holds a qBittorrent session, and signs in and out.
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -22,7 +23,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (username: string, password: string) => {
-    if (!(await qbitClient.login(username, password))) throw new Error('qBittorrent didn\'t accept that username and password.')
+    if (!(await qbitClient.login(username, password))) throw new Error(t('qBittorrent didn\'t accept that username and password.'))
     setStatus('signedIn')
   }, [])
 

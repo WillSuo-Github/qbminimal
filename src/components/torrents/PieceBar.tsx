@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useTorrentAvailability, useTorrentPieces } from '@/hooks/useApi'
 import { countPieces, getAvailabilityColumns, getPieceColumns } from '@/lib/pieces'
+import { t } from '@/i18n'
 
 const DONE_COLOR = '#22c55e'
 const DOWNLOADING_COLOR = '#f59e0b'
@@ -68,8 +69,8 @@ function AvailabilityBar({ hash }: { hash: string }) {
   if (!availability?.length || availability.every(peers => peers < 0)) return null
   const missing = availability.filter(peers => peers === 0).length
   const summary = missing === 0
-    ? 'Every piece is available from connected peers'
-    : `${missing.toLocaleString()} ${missing === 1 ? 'piece isn\'t' : 'pieces aren\'t'} available from connected peers`
+    ? t('Every piece is available from connected peers')
+    : missing === 1 ? t('1 piece isn\'t available from connected peers') : t('{count} pieces aren\'t available from connected peers', { count: missing.toLocaleString() })
 
   return (
     <div className="space-y-1 pt-1">
@@ -104,12 +105,14 @@ export function PieceBar({ hash, torrentComplete }: { hash: string; torrentCompl
     return () => observer.disconnect()
   }, [states])
 
-  if (isLoading) return <p className="px-2 py-2 text-xs text-muted-foreground">Loading pieces...</p>
-  if (isError) return <p className="px-2 py-2 text-xs text-muted-foreground">Couldn't load this torrent's pieces.</p>
-  if (!states?.length) return <p className="px-2 py-2 text-xs text-muted-foreground">Piece information isn't available yet.</p>
+  if (isLoading) return <p className="px-2 py-2 text-xs text-muted-foreground">{t('Loading pieces...')}</p>
+  if (isError) return <p className="px-2 py-2 text-xs text-muted-foreground">{t('Couldn\'t load this torrent\'s pieces.')}</p>
+  if (!states?.length) return <p className="px-2 py-2 text-xs text-muted-foreground">{t('Piece information isn\'t available yet.')}</p>
 
   const { total, done, downloading } = countPieces(states)
-  const summary = `${done.toLocaleString()} of ${total.toLocaleString()} pieces${downloading ? `, ${downloading.toLocaleString()} downloading` : ''}`
+  const summary = downloading
+    ? t('{done} of {total} pieces, {downloading} downloading', { done: done.toLocaleString(), total: total.toLocaleString(), downloading: downloading.toLocaleString() })
+    : t('{done} of {total} pieces', { done: done.toLocaleString(), total: total.toLocaleString() })
 
   return (
     <div className="space-y-1 px-2 py-2">
@@ -117,9 +120,9 @@ export function PieceBar({ hash, torrentComplete }: { hash: string; torrentCompl
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>{summary}</span>
         <span className="flex items-center gap-2">
-          <LegendItem className="bg-green-500" label="Done" />
-          <LegendItem className="bg-amber-500" label="Downloading" />
-          <LegendItem className="border bg-muted" label="Missing" />
+          <LegendItem className="bg-green-500" label={t('Done')} />
+          <LegendItem className="bg-amber-500" label={t('Downloading')} />
+          <LegendItem className="border bg-muted" label={t('Missing')} />
         </span>
       </div>
       {!torrentComplete && <AvailabilityBar hash={hash} />}

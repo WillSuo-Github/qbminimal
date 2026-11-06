@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { t } from '@/i18n'
 
 interface ConfirmActionProps {
   label: string
@@ -38,7 +39,7 @@ export function ConfirmAction({ label, title, message, confirmLabel, disabled, o
             <DialogDescription>{message}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t('Cancel')}</Button>
             <Button type="button" variant="destructive" onClick={() => { setOpen(false); onConfirm() }}>{confirmLabel}</Button>
           </DialogFooter>
         </DialogContent>

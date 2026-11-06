@@ -11,6 +11,7 @@ import { qbitClient } from '@/lib/api'
 import { parsePeerAddresses } from '@/lib/peers'
 import { formatBytes } from '@/lib/format'
 import { PeerFlag } from './PeerFlag'
+import { t } from '@/i18n'
 
 export function PeersTab({ hash }: { hash: string }) {
   const { data, isLoading, isError } = useTorrentPeers(hash)
@@ -22,19 +23,19 @@ export function PeersTab({ hash }: { hash: string }) {
     e.preventDefault()
     const { valid, invalid } = parsePeerAddresses(newPeers)
     if (invalid.length > 0 || valid.length === 0) {
-      toast.error('Enter peers as IP:port', { description: invalid.length > 0 ? `Can't use: ${invalid.join(', ')}` : undefined })
+      toast.error(t('Enter peers as IP:port'), { description: invalid.length > 0 ? t('Can\'t use: {value}', { value: invalid.join(', ') }) : undefined })
       return
     }
 
     try {
       const results = await action.mutateAsync({
         work: () => qbitClient.addPeers([hash], valid),
-        failed: 'Failed to add peers',
+        failed: t('Failed to add peers'),
       }) as Awaited<ReturnType<typeof qbitClient.addPeers>>
       setNewPeers('')
       const { added = 0, failed = 0 } = results[hash] ?? {}
-      if (failed > 0) toast.warning(`Added ${added}, couldn't add ${failed}`, { description: 'The Logs page may say why.' })
-      else toast.success(added === 1 ? 'Peer added' : `Added ${added} peers`)
+      if (failed > 0) toast.warning(t('Added {added}, couldn\'t add {failed}', { added, failed }), { description: t('The Logs page may say why.') })
+      else toast.success(added === 1 ? t('Peer added') : t('Added {added} peers', { added }))
     } catch {
       // The action already showed the error.
     }
@@ -43,8 +44,8 @@ export function PeersTab({ hash }: { hash: string }) {
   const ban = (address: string) => {
     action.mutateAsync({
       work: () => qbitClient.banPeers([address]),
-      failed: 'Failed to ban peer',
-    }).then(() => { toast.success('Peer banned') }, () => undefined)
+      failed: t('Failed to ban peer'),
+    }).then(() => { toast.success(t('Peer banned')) }, () => undefined)
   }
 
   const entries = Object.entries(peers ?? {})
@@ -52,11 +53,11 @@ export function PeersTab({ hash }: { hash: string }) {
   return (
     <div className="space-y-3">
       {isLoading ? (
-        <div className="py-8 text-center text-muted-foreground">Loading peers...</div>
+        <div className="py-8 text-center text-muted-foreground">{t('Loading peers...')}</div>
       ) : isError && !peers ? (
-        <div className="py-8 text-center text-muted-foreground">Couldn't load peers</div>
+        <div className="py-8 text-center text-muted-foreground">{t('Couldn\'t load peers')}</div>
       ) : entries.length === 0 ? (
-        <div className="py-8 text-center text-muted-foreground">No peers connected</div>
+        <div className="py-8 text-center text-muted-foreground">{t('No peers connected')}</div>
       ) : (
         <ul className="divide-y text-sm">
           {entries.map(([id, peer]) => (
@@ -65,14 +66,14 @@ export function PeersTab({ hash }: { hash: string }) {
               <div className="min-w-0 flex-1">
                 <p className="break-all tabular-nums">{peer.ip ?? id}{peer.port ? `:${peer.port}` : ''}</p>
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  {[peer.country, peer.client || 'Unknown client', `${Math.round((peer.progress ?? 0) * 100)}%`, `↓ ${formatBytes(peer.dl_speed ?? 0)}/s`, `↑ ${formatBytes(peer.up_speed ?? 0)}/s`].filter(Boolean).join(' · ')}
+                  {[peer.country, peer.client || t('Unknown client'), `${Math.round((peer.progress ?? 0) * 100)}%`, `↓ ${formatBytes(peer.dl_speed ?? 0)}/s`, `↑ ${formatBytes(peer.up_speed ?? 0)}/s`].filter(Boolean).join(' · ')}
                 </p>
               </div>
               <ConfirmAction
-                label={`Ban ${peer.ip ?? id}`}
-                title="Ban this peer?"
-                message={`${peer.ip ?? id} will be banned from every torrent, not only this one. You can undo this with Unban, below the peer list.`}
-                confirmLabel="Ban"
+                label={t('Ban {value}', { value: peer.ip ?? id })}
+                title={t('Ban this peer?')}
+                message={t('{value} will be banned from every torrent, not only this one. You can undo this with Unban, below the peer list.', { value: peer.ip ?? id })}
+                confirmLabel={t('Ban')}
                 disabled={action.isPending}
                 onConfirm={() => ban(id)}
               >
@@ -84,19 +85,19 @@ export function PeersTab({ hash }: { hash: string }) {
       )}
 
       {data && !data.showFlags && entries.length > 0 && (
-        <p className="px-2 text-xs text-muted-foreground">To see each peer's country, turn on Resolve peer countries in Settings, Advanced.</p>
+        <p className="px-2 text-xs text-muted-foreground">{t('To see each peer\'s country, turn on Resolve peer countries in Settings, Advanced.')}</p>
       )}
 
       <form onSubmit={add} className="space-y-1 border-t px-2 pb-2 pt-3">
-        <Label htmlFor="new-peers" className="text-xs text-muted-foreground">Add peers, as IP:port</Label>
+        <Label htmlFor="new-peers" className="text-xs text-muted-foreground">{t('Add peers, as IP:port')}</Label>
         <div className="flex gap-2">
           <Input id="new-peers" value={newPeers} placeholder="203.0.113.5:6881" onChange={(e) => setNewPeers(e.target.value)} className="h-8 text-sm" />
-          <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>Add</Button>
+          <Button type="submit" size="sm" variant="outline" disabled={action.isPending}>{t('Add')}</Button>
         </div>
       </form>
 
       <div className="space-y-1 border-t px-2 pb-2 pt-3">
-        <h3 className="text-xs text-muted-foreground">Banned peers, across all torrents</h3>
+        <h3 className="text-xs text-muted-foreground">{t('Banned peers, across all torrents')}</h3>
         <BannedPeers />
       </div>
     </div>

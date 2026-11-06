@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 // How a torrent's state reads and looks in the list.
 
 // qBittorrent 5 says 'stopped' where 4.x said 'paused'.
@@ -60,8 +61,8 @@ const LABELS: Record<string, string> = {
 }
 
 export function getStateLabel(state: string, completedOn: number): string {
-  if (isStoppedState(state) && completedOn > 0) return 'Completed'
-  return LABELS[state] || state
+  if (isStoppedState(state) && completedOn > 0) return t('Completed')
+  return LABELS[state] ? t(LABELS[state]) : state
 }
 
 const NEVER = 8640000

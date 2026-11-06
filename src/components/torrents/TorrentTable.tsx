@@ -1,23 +1,24 @@
-import { useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react'
+import { useRef, useState, type DragEvent, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { formatDateTime, formatDuration } from '@/lib/format'
+import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { formatBytes } from '@/lib/format'
 import { columnWidth, getColumn, moveColumn, resizeColumn, shiftColumn, trackerHost, visibleColumns, type ColumnId, type ColumnLayout } from '@/lib/torrentColumns'
 import { formatEta, getStateBadge, getStateLabel, ratioColor } from '@/lib/torrentState'
 import type { SortDirection } from '@/lib/listSettings'
+import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
+import { BottomScrollbar } from './BottomScrollbar'
+import { t } from '@/i18n'
 
 const SELECT_WIDTH = 40
-const ACTIONS_WIDTH = 120
-// The checkbox and the action buttons stay in view while the other columns scroll sideways.
-// Their background has to be solid, so it mixes the row's hover tint into the card color.
+// The checkbox stays in view while the other columns scroll sideways. Its background has to be
+// solid, so it mixes the row's hover tint into the card color.
 const PINNED_LEFT = 'sticky left-0 z-10 bg-card group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]'
-const PINNED_RIGHT = 'sticky right-0 z-10 bg-card shadow-[-1px_0_0_var(--border)] group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]'
 const PINNED_SELECTED = 'bg-muted group-hover:bg-muted'
 
-const speed = (bytes: number) => (bytes > 0 ? `${formatBytes(bytes)}/s` : <span className="text-muted-foreground/60">-</span>)
+// Download green and upload blue, as in the header.
+const speed = (bytes: number, color: string) => (bytes > 0 ? <span className={color}>{formatBytes(bytes)}/s</span> : <span className="text-muted-foreground/60">-</span>)
 const limit = (bytes: number) => (bytes > 0 ? `${formatBytes(bytes)}/s` : '∞')
 const pair = (connected: number, total: number) => `${Math.max(connected, 0)} (${Math.max(total, 0)})`
 
@@ -44,8 +45,8 @@ function Cell({ torrent, id }: { torrent: Torrent; id: ColumnId }): ReactNode {
       )
     case 'num_seeds': return pair(torrent.num_seeds, torrent.num_complete)
     case 'num_leechs': return pair(torrent.num_leechs, torrent.num_incomplete)
-    case 'dlspeed': return speed(torrent.dlspeed)
-    case 'upspeed': return speed(torrent.upspeed)
+    case 'dlspeed': return speed(torrent.dlspeed, 'text-green-600 dark:text-green-500')
+    case 'upspeed': return speed(torrent.upspeed, 'text-blue-600 dark:text-blue-400')
     case 'eta': return formatEta(torrent.eta)
     case 'ratio': return <span className={ratioColor(torrent.ratio)}>{torrent.ratio.toFixed(2)}</span>
     case 'category': return <span title={torrent.category}>{torrent.category}</span>
@@ -71,28 +72,36 @@ interface TorrentTableProps {
   torrents: Torrent[]
   layout: ColumnLayout
   onLayoutChange: (layout: ColumnLayout) => void
-  selected: Set<string>
-  allSelected: boolean
-  onSelect: (hash: string, checked: boolean) => void
+  selected: ReadonlySet<string>
+  // Whether every, some, or none of the matching torrents are selected, for the header checkbox.
+  selectAllState: boolean | 'indeterminate'
+  // A checkbox click. With Shift it selects the range from the last row clicked.
+  onToggle: (hash: string, range: boolean) => void
   onSelectAll: (checked: boolean) => void
+  // The torrent shown in the details panel, marked in the list.
+  openHash: string | null
   sortField: ColumnId
   sortDirection: SortDirection
   onSort: (field: ColumnId) => void
-  onRowDoubleClick: (e: MouseEvent, torrent: Torrent) => void
-  renderActions: (torrent: Torrent) => ReactNode
+  // Click, long-press, and right-click handlers for a row.
+  rowProps: (torrent: Torrent) => RowProps
+  // Wraps the table body, for the right-click menu.
+  wrapBody: (body: ReactElement) => ReactNode
 }
 
 // A table whose columns can be dragged to a new place, resized from their right edge, sorted by
 // clicking, and shown or hidden from the Columns menu. Alt + arrow keys on a header move it too.
-export function TorrentTable({ torrents, layout, onLayoutChange, selected, allSelected, onSelect, onSelectAll, sortField, sortDirection, onSort, onRowDoubleClick, renderActions }: TorrentTableProps) {
+// Clicking a row selects it and opens its details; Ctrl or Cmd adds to the selection, Shift a range.
+export function TorrentTable({ torrents, layout, onLayoutChange, selected, selectAllState, onToggle, onSelectAll, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
   const columns = visibleColumns(layout)
   const [resizing, setResizing] = useState<{ id: ColumnId; width: number } | null>(null)
   const resizeStart = useRef<{ x: number; width: number } | null>(null)
   const [dragging, setDragging] = useState<ColumnId | null>(null)
   const [dropTarget, setDropTarget] = useState<ColumnId | null>(null)
+  const scroller = useRef<HTMLDivElement>(null)
 
   const widthOf = (id: ColumnId) => (resizing?.id === id ? resizing.width : columnWidth(layout, id))
-  const total = SELECT_WIDTH + ACTIONS_WIDTH + columns.reduce((sum, def) => sum + widthOf(def.id), 0)
+  const total = SELECT_WIDTH + columns.reduce((sum, def) => sum + widthOf(def.id), 0)
 
   const startResize = (e: PointerEvent<HTMLSpanElement>, id: ColumnId) => {
     e.preventDefault()
@@ -148,19 +157,19 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, allSe
   const dragIndex = dragging ? columns.findIndex(def => def.id === dragging) : -1
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card">
+    // Its own scrollbar is hidden: the one at the bottom of the screen stands in for it.
+    <div ref={scroller} className="overflow-x-auto rounded-xl border bg-card [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <table className="table-fixed caption-bottom text-sm tabular-nums" style={{ width: `max(100%, ${total}px)` }}>
         <colgroup>
           <col style={{ width: SELECT_WIDTH }} />
           {columns.map(def => <col key={def.id} style={{ width: widthOf(def.id) }} />)}
-          {/* Takes any room left over, so the actions stay at the right edge. */}
+          {/* Takes any room left over, so the columns keep their widths. */}
           <col />
-          <col style={{ width: ACTIONS_WIDTH }} />
         </colgroup>
         <thead className="border-b">
           <tr>
             <th className="sticky left-0 z-10 h-10 bg-card px-2 text-left">
-              <Checkbox aria-label="Select all" checked={allSelected} onCheckedChange={(checked) => onSelectAll(!!checked)} />
+              <Checkbox aria-label={t('Select all')} checked={selectAllState} onCheckedChange={(checked) => onSelectAll(checked === true)} />
             </th>
             {columns.map((def, index) => {
               const sorted = sortField === def.id
@@ -187,7 +196,7 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, allSe
                     type="button"
                     onClick={() => onSort(def.id)}
                     onKeyDown={(e) => onHeaderKey(e, def.id)}
-                    title={`Sort by ${def.label}. Drag to move, or press Alt and an arrow key.`}
+                    title={t('Sort by {label}. Drag to move, or press Alt and an arrow key.', { label: def.label })}
                     className={cn('flex w-full min-w-0 cursor-grab items-center gap-1 hover:text-foreground active:cursor-grabbing', def.numeric && 'justify-end', sorted && 'text-foreground')}
                   >
                     <span className="truncate">{def.label}</span>
@@ -196,8 +205,8 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, allSe
                   <span
                     role="separator"
                     aria-orientation="vertical"
-                    aria-label={`Resize ${def.label}`}
-                    title="Drag to resize. Double-click to reset."
+                    aria-label={t('Resize {label}', { label: def.label })}
+                    title={t('Drag to resize. Double-click to reset.')}
                     onPointerDown={(e) => startResize(e, def.id)}
                     onPointerMove={(e) => moveResize(e, def.id)}
                     onPointerUp={endResize}
@@ -211,33 +220,44 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, allSe
               )
             })}
             <th aria-hidden />
-            <th className="sticky right-0 z-10 h-10 bg-card px-2 shadow-[-1px_0_0_var(--border)]"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
-        <tbody>
-          {torrents.map(torrent => {
-            const isSelected = selected.has(torrent.hash)
-            return (
-            <tr
-              key={torrent.hash}
-              className={cn('group cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/50', isSelected && 'bg-muted')}
-              onDoubleClick={(e) => onRowDoubleClick(e, torrent)}
-            >
-              <td className={cn('px-2 py-1.5', PINNED_LEFT, isSelected && PINNED_SELECTED)}>
-                <Checkbox aria-label={`Select ${torrent.name}`} checked={isSelected} onCheckedChange={(checked) => onSelect(torrent.hash, !!checked)} />
-              </td>
-              {columns.map(def => (
-                <td key={def.id} className={cn('truncate px-2 py-1.5 whitespace-nowrap', def.numeric && 'text-right', def.id === 'name' && 'text-xs font-medium')}>
-                  <Cell torrent={torrent} id={def.id} />
-                </td>
-              ))}
-              <td aria-hidden />
-              <td className={cn('px-2 py-1', PINNED_RIGHT, isSelected && PINNED_SELECTED)}>{renderActions(torrent)}</td>
-            </tr>
-            )
-          })}
-        </tbody>
+        {wrapBody(
+          <tbody>
+            {torrents.map(torrent => {
+              const isSelected = selected.has(torrent.hash)
+              return (
+                <tr
+                  key={torrent.hash}
+                  {...rowProps(torrent)}
+                  aria-selected={isSelected}
+                  className={cn(
+                    'group cursor-default border-b transition-colors outline-none select-none last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [-webkit-touch-callout:none]',
+                    isSelected && 'bg-muted',
+                    openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)]',
+                  )}
+                >
+                  <td className={cn('px-2 py-1.5', PINNED_LEFT, isSelected && PINNED_SELECTED, openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)]')}>
+                    <Checkbox
+                      aria-label={t('Select {name}', { name: torrent.name })}
+                      checked={isSelected}
+                      // Handled here rather than on change, to see whether Shift is down.
+                      onClick={(e) => { e.preventDefault(); onToggle(torrent.hash, e.shiftKey) }}
+                    />
+                  </td>
+                  {columns.map(def => (
+                    <td key={def.id} className={cn('truncate px-2 py-1.5 whitespace-nowrap', def.numeric && 'text-right', def.id === 'name' && 'text-xs font-medium')}>
+                      <Cell torrent={torrent} id={def.id} />
+                    </td>
+                  ))}
+                  <td aria-hidden />
+                </tr>
+              )
+            })}
+          </tbody>,
+        )}
       </table>
+      <BottomScrollbar target={scroller} />
     </div>
   )
 }

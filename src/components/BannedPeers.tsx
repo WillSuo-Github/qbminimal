@@ -1,14 +1,15 @@
 import { Button } from '@/components/ui/button'
 import { useBannedPeers, useUnbanPeer } from '@/hooks/useApi'
 import { toast } from '@/hooks/use-toast'
+import { t } from '@/i18n'
 
 export function BannedPeers() {
   const { data: banned, isLoading, isError } = useBannedPeers()
   const unban = useUnbanPeer()
 
-  if (isLoading) return <p className="text-xs text-muted-foreground">Loading banned peers...</p>
-  if (isError && !banned) return <p className="text-xs text-muted-foreground">Couldn't load banned peers</p>
-  if (!banned?.length) return <p className="text-xs text-muted-foreground">No banned peers</p>
+  if (isLoading) return <p className="text-xs text-muted-foreground">{t('Loading banned peers...')}</p>
+  if (isError && !banned) return <p className="text-xs text-muted-foreground">{t('Couldn\'t load banned peers')}</p>
+  if (!banned?.length) return <p className="text-xs text-muted-foreground">{t('No banned peers')}</p>
 
   return (
     <ul className="max-h-48 divide-y overflow-y-auto text-sm">
@@ -20,11 +21,11 @@ export function BannedPeers() {
             size="sm"
             variant="outline"
             className="flex-shrink-0"
-            aria-label={`Unban ${ip}`}
+            aria-label={t('Unban {ip}', { ip })}
             disabled={unban.isPending}
-            onClick={() => unban.mutate(ip, { onSuccess: () => { toast.success('Peer unbanned') } })}
+            onClick={() => unban.mutate(ip, { onSuccess: () => { toast.success(t('Peer unbanned')) } })}
           >
-            Unban
+            {t('Unban')}
           </Button>
         </li>
       ))}

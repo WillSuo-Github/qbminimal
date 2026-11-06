@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useApiFeature, usePreferences } from '@/hooks/useApi'
 import { qbitClient } from '@/lib/api'
 import { formatBytes } from '@/lib/format'
+import { t } from '@/i18n'
 
 // How much room the chosen save path has. Needs Web API 2.15.2, so it shows nothing on older versions.
 export function FreeSpaceHint({ path }: { path: string }) {
@@ -25,5 +26,5 @@ export function FreeSpaceHint({ path }: { path: string }) {
   })
 
   if (!supported || free === undefined || !Number.isFinite(free) || free < 0) return null
-  return <p className="text-xs text-muted-foreground">{formatBytes(free)} free there</p>
+  return <p className="text-xs text-muted-foreground">{t('{size} free there', { size: formatBytes(free) })}</p>
 }

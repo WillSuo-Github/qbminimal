@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    // Component tests ask for jsdom at their top; the rest run in plain Node.
+    setupFiles: ['src/test/setup.ts'],
   },
 })

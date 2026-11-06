@@ -5,15 +5,16 @@ import { NativeSelect } from '@/components/NativeSelect'
 import { formatBytes } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { SearchResult } from '@/types'
+import { t } from '@/i18n'
 
 type SortKey = 'fileName' | 'fileSize' | 'nbSeeders' | 'nbLeechers' | 'siteUrl'
 
 const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
-  { key: 'fileName', label: 'Name' },
-  { key: 'fileSize', label: 'Size', numeric: true },
-  { key: 'nbSeeders', label: 'Seeds', numeric: true },
-  { key: 'nbLeechers', label: 'Leeches', numeric: true },
-  { key: 'siteUrl', label: 'Source' },
+  { key: 'fileName', label: t('Name') },
+  { key: 'fileSize', label: t('Size'), numeric: true },
+  { key: 'nbSeeders', label: t('Seeds'), numeric: true },
+  { key: 'nbLeechers', label: t('Leeches'), numeric: true },
+  { key: 'siteUrl', label: t('Source') },
 ]
 
 const PER_PAGE = 20
@@ -46,13 +47,13 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
   const links = (result: SearchResult) => (
     <span className="flex items-center gap-1">
       {result.fileUrl && (
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Add ${result.fileName}`} title="Add" onClick={(e) => { e.stopPropagation(); onAdd(result) }}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('Add {fileName}', { fileName: result.fileName })} title={t('Add')} onClick={(e) => { e.stopPropagation(); onAdd(result) }}>
           <Download className="h-4 w-4" />
         </Button>
       )}
       {result.descrLink && (
         <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-          <a href={result.descrLink} target="_blank" rel="noopener noreferrer" aria-label="Open its page" title="Open its page" onClick={(e) => e.stopPropagation()}><ExternalLink className="h-4 w-4" /></a>
+          <a href={result.descrLink} target="_blank" rel="noopener noreferrer" aria-label={t('Open its page')} title={t('Open its page')} onClick={(e) => e.stopPropagation()}><ExternalLink className="h-4 w-4" /></a>
         </Button>
       )}
     </span>
@@ -61,15 +62,15 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 md:hidden">
-        <span className="text-sm text-muted-foreground">{results.length} results</span>
-        <NativeSelect aria-label="Sort results" className="h-8" value={`${sort.key}:${sort.desc ? 'desc' : 'asc'}`} onChange={(e) => {
+        <span className="text-sm text-muted-foreground">{t('{count} results', { count: results.length })}</span>
+        <NativeSelect aria-label={t('Sort results')} className="h-8" value={`${sort.key}:${sort.desc ? 'desc' : 'asc'}`} onChange={(e) => {
           const [key, direction] = e.target.value.split(':')
           setSort({ key: key as SortKey, desc: direction === 'desc' })
           setPage(1)
         }}>
           {COLUMNS.flatMap(c => [
-            <option key={`${c.key}:desc`} value={`${c.key}:desc`}>{c.label} {c.numeric ? '(most first)' : '(Z to A)'}</option>,
-            <option key={`${c.key}:asc`} value={`${c.key}:asc`}>{c.label} {c.numeric ? '(fewest first)' : '(A to Z)'}</option>,
+            <option key={`${c.key}:desc`} value={`${c.key}:desc`}>{c.label} {c.numeric ? t('(most first)') : t('(Z to A)')}</option>,
+            <option key={`${c.key}:asc`} value={`${c.key}:asc`}>{c.label} {c.numeric ? t('(fewest first)') : t('(A to Z)')}</option>,
           ])}
         </NativeSelect>
       </div>
@@ -86,7 +87,7 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
                   </button>
                 </th>
               ))}
-              <th className="w-24"><span className="sr-only">Actions</span></th>
+              <th className="w-24"><span className="sr-only">{t('Actions')}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -108,7 +109,7 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
         {shown.map(result => (
           <li key={`${result.fileUrl}|${result.descrLink}`} className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2.5">
             <button type="button" className="min-w-0 flex-1 text-left" onClick={() => result.fileUrl && onAdd(result)}>
-              <span className="block text-[10px] text-muted-foreground">{result.nbSeeders} seeds · {result.nbLeechers} leeches</span>
+              <span className="block text-[10px] text-muted-foreground">{t('{seeds} seeds · {leeches} leeches', { seeds: result.nbSeeders, leeches: result.nbLeechers })}</span>
               <span className="block text-xs font-medium [overflow-wrap:anywhere]">{result.fileName}</span>
               <span className="block truncate text-[10px] text-muted-foreground">{formatBytes(result.fileSize)} · {host(result.siteUrl)}</span>
             </button>
@@ -119,11 +120,11 @@ export function SearchResults({ results, onAdd }: { results: SearchResult[]; onA
 
       {pages > 1 && (
         <div className="flex items-center justify-between px-2 text-sm">
-          <span className="text-muted-foreground">{(current - 1) * PER_PAGE + 1}-{Math.min(current * PER_PAGE, sorted.length)} of {sorted.length}</span>
+          <span className="text-muted-foreground">{t('{from}-{to} of {total}', { from: (current - 1) * PER_PAGE + 1, to: Math.min(current * PER_PAGE, sorted.length), total: sorted.length })}</span>
           <span className="flex items-center gap-2">
-            <Button variant="outline" size="sm" aria-label="Previous page" disabled={current === 1} onClick={() => setPage(current - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" aria-label={t('Previous page')} disabled={current === 1} onClick={() => setPage(current - 1)}><ChevronLeft className="h-4 w-4" /></Button>
             <span className="tabular-nums">{current} / {pages}</span>
-            <Button variant="outline" size="sm" aria-label="Next page" disabled={current === pages} onClick={() => setPage(current + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="outline" size="sm" aria-label={t('Next page')} disabled={current === pages} onClick={() => setPage(current + 1)}><ChevronRight className="h-4 w-4" /></Button>
           </span>
         </div>
       )}

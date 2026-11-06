@@ -5,68 +5,72 @@ import { copyText } from '@/lib/clipboard'
 import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import type { Torrent } from '@/types'
 import { PieceBar } from './PieceBar'
+import { t } from '@/i18n'
 
 type Row = [label: string, value: string | number | undefined | false]
 
 // Groups of facts about a torrent. Rows without a value, often fields an older qBittorrent
 // doesn't send, are left out.
-function groups(t: Torrent): { title: string; rows: Row[] }[] {
+function groups(x: Torrent): { title: string; rows: Row[] }[] {
   const has = (n: number | undefined) => n !== undefined && n >= 0
+  const of = (part: number | string, whole: number | string) => t('{part} of {whole}', { part, whole })
   return [
     {
-      title: 'Transfer',
+      title: t('Transfer'),
       rows: [
-        ['Progress', `${Math.floor(t.progress * 1000) / 10}% of ${formatBytes(t.size)}`],
-        ['Speed', `↓ ${formatBytes(t.dlspeed)}/s · ↑ ${formatBytes(t.upspeed)}/s`],
-        ['Downloaded', formatBytes(t.downloaded ?? t.total_downloaded ?? 0)],
-        ['Uploaded', formatBytes(t.uploaded)],
-        ['Ratio', t.ratio.toFixed(2)],
-        ['Seeds', `${t.num_seeds} connected of ${t.num_complete}`],
-        ['Peers', `${t.num_leechs} connected of ${t.num_incomplete}`],
-        ['Connections', has(t.connections_count) && `${t.connections_count}${t.connections_limit && t.connections_limit > 0 ? ` of ${t.connections_limit}` : ''}`],
-        ['Availability', has(t.availability) && t.availability!.toFixed(3)],
-        ['Wasted', has(t.total_wasted) && formatBytes(t.total_wasted!)],
-        ['Pieces', !!t.pieces_num && `${t.pieces_have ?? 0} of ${t.pieces_num}${t.piece_size ? `, ${formatBytes(t.piece_size)} each` : ''}`],
-        ['Queue position', t.priority > 0 ? t.priority : 'Not queued'],
+        [t('Progress'), of(`${Math.floor(x.progress * 1000) / 10}%`, formatBytes(x.size))],
+        [t('Speed'), `↓ ${formatBytes(x.dlspeed)}/s · ↑ ${formatBytes(x.upspeed)}/s`],
+        [t('Downloaded'), formatBytes(x.downloaded ?? x.total_downloaded ?? 0)],
+        [t('Uploaded'), formatBytes(x.uploaded)],
+        [t('Ratio'), x.ratio.toFixed(2)],
+        [t('Seeds'), t('{connected} connected of {total}', { connected: x.num_seeds, total: x.num_complete })],
+        [t('Peers'), t('{connected} connected of {total}', { connected: x.num_leechs, total: x.num_incomplete })],
+        [t('Connections'), has(x.connections_count) && (x.connections_limit && x.connections_limit > 0 ? of(x.connections_count!, x.connections_limit) : String(x.connections_count))],
+        [t('Availability'), has(x.availability) && x.availability!.toFixed(3)],
+        [t('Wasted'), has(x.total_wasted) && formatBytes(x.total_wasted!)],
+        [t('Pieces'), !!x.pieces_num && (x.piece_size
+          ? t('{have} of {total}, {size} each', { have: x.pieces_have ?? 0, total: x.pieces_num, size: formatBytes(x.piece_size) })
+          : of(x.pieces_have ?? 0, x.pieces_num))],
+        [t('Queue position'), x.priority > 0 ? x.priority : t('Not queued')],
       ],
     },
     {
-      title: 'Time',
+      title: t('Time'),
       rows: [
-        ['Added', formatDateTime(t.added_on)],
-        ['Completed', t.completion_on > 0 && formatDateTime(t.completion_on)],
-        ['Active for', formatDuration(t.time_active)],
-        ['Seeding for', t.seeding_time > 0 && formatDuration(t.seeding_time)],
-        ['Next announce', has(t.reannounce) && formatDuration(t.reannounce)],
+        [t('Added'), formatDateTime(x.added_on)],
+        [t('Completed'), x.completion_on > 0 && formatDateTime(x.completion_on)],
+        [t('Active for'), formatDuration(x.time_active)],
+        [t('Seeding for'), x.seeding_time > 0 && formatDuration(x.seeding_time)],
+        [t('Next announce'), has(x.reannounce) && formatDuration(x.reannounce)],
       ],
     },
     {
-      title: 'Where',
+      title: t('Where'),
       rows: [
-        ['Save path', t.save_path],
-        ['Incomplete files', t.download_path],
-        ['Category', t.category || '-'],
-        ['Tags', t.tags || '-'],
+        [t('Save path'), x.save_path],
+        [t('Incomplete files'), x.download_path],
+        [t('Category'), x.category || '-'],
+        [t('Tags'), x.tags || '-'],
       ],
     },
     {
-      title: 'About',
+      title: t('About'),
       rows: [
-        ['Private', t.private !== undefined && (t.private ? 'Yes' : 'No')],
-        ['Created by', t.created_by],
-        ['Created on', !!t.creation_date && t.creation_date > 0 && formatDateTime(t.creation_date)],
-        ['Comment', t.comment],
-        ['Hash', t.hash],
-        ['Hash (v2)', t.infohash_v2],
+        [t('Private'), x.private !== undefined && (x.private ? t('Yes') : t('No'))],
+        [t('Created by'), x.created_by],
+        [t('Created on'), !!x.creation_date && x.creation_date > 0 && formatDateTime(x.creation_date)],
+        [t('Comment'), x.comment],
+        [t('Hash'), x.hash],
+        [t('Hash (v2)'), x.infohash_v2],
       ],
     },
   ]
 }
 
 export function TorrentInfoTab({ torrent }: { torrent: Torrent }) {
-  const copy = async (text: string, what: string) => {
-    if (await copyText(text)) toast.success(`${what} copied`)
-    else toast.error(`Couldn't copy the ${what.toLowerCase()}`)
+  const copy = async (text: string, copied: string, failed: string) => {
+    if (await copyText(text)) toast.success(copied)
+    else toast.error(failed)
   }
 
   return (
@@ -77,16 +81,16 @@ export function TorrentInfoTab({ torrent }: { torrent: Torrent }) {
       {torrent.error && <p role="alert" className="mx-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{torrent.error}</p>}
 
       <div className="flex flex-wrap gap-2 px-2">
-        <Button size="sm" variant="outline" onClick={() => copy(torrent.name, 'Name')}>Copy name</Button>
-        <Button size="sm" variant="outline" onClick={() => copy(torrent.hash, 'Hash')}>Copy hash</Button>
-        {torrent.magnet_uri && <Button size="sm" variant="outline" onClick={() => copy(torrent.magnet_uri, 'Magnet link')}>Copy magnet link</Button>}
+        <Button size="sm" variant="outline" onClick={() => copy(torrent.name, t('Name copied'), t("Couldn't copy the name"))}>{t('Copy name')}</Button>
+        <Button size="sm" variant="outline" onClick={() => copy(torrent.hash, t('Hash copied'), t("Couldn't copy the hash"))}>{t('Copy hash')}</Button>
+        {torrent.magnet_uri && <Button size="sm" variant="outline" onClick={() => copy(torrent.magnet_uri, t('Magnet link copied'), t("Couldn't copy the magnet link"))}>{t('Copy magnet link')}</Button>}
         {torrent.has_metadata === false ? (
-          <span className="inline-flex cursor-not-allowed" title="Available once qBittorrent has this torrent's metadata">
-            <Button size="sm" variant="outline" disabled>Export .torrent</Button>
+          <span className="inline-flex cursor-not-allowed" title={t('Available once qBittorrent has this torrent\'s metadata')}>
+            <Button size="sm" variant="outline" disabled>{t('Export .torrent')}</Button>
           </span>
         ) : (
           <Button size="sm" variant="outline" asChild>
-            <a href={getTorrentExportUrl(torrent.hash)} download={`${torrent.name}.torrent`}>Export .torrent</a>
+            <a href={getTorrentExportUrl(torrent.hash)} download={`${torrent.name}.torrent`}>{t('Export .torrent')}</a>
           </Button>
         )}
       </div>

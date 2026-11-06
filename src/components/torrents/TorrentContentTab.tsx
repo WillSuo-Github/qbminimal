@@ -11,6 +11,7 @@ import { buildFileTree, type FileTreeNode } from '@/lib/fileTree'
 import { formatBytes } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { TorrentFile } from '@/types'
+import { t } from '@/i18n'
 
 const INDENT = 16
 
@@ -22,18 +23,18 @@ function WantedIcon({ state }: { state: 'all' | 'some' | 'none' }) {
 
 // Finished files can be saved straight from qBittorrent 5.3. Otherwise the button explains why not.
 function DownloadLink({ hash, file, canServe }: { hash: string; file: TorrentFile; canServe: boolean }) {
-  const reason = !canServe ? 'Downloading files needs qBittorrent 5.3 or newer.' : file.progress < 1 ? 'This file isn\'t fully downloaded yet.' : null
+  const reason = !canServe ? t('Downloading files needs qBittorrent 5.3 or newer.') : file.progress < 1 ? t('This file isn\'t fully downloaded yet.') : null
   if (reason) {
     // A disabled button ignores the pointer, so the wrapper carries the tooltip.
     return (
       <span className="inline-flex cursor-not-allowed" title={reason} onClick={(e) => e.stopPropagation()}>
-        <Button variant="ghost" size="icon" className="h-6 w-6" disabled aria-label={`Download ${file.name}: ${reason}`}><Download className="h-3 w-3" /></Button>
+        <Button variant="ghost" size="icon" className="h-6 w-6" disabled aria-label={t('Download {name}: {reason}', { name: file.name, reason })}><Download className="h-3 w-3" /></Button>
       </span>
     )
   }
   return (
     <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-      <a href={getFileDownloadUrl(hash, file.index)} download={file.name.split('/').pop()} target="_blank" rel="noopener" title="Download" aria-label={`Download ${file.name}`} onClick={(e) => e.stopPropagation()}>
+      <a href={getFileDownloadUrl(hash, file.index)} download={file.name.split('/').pop()} target="_blank" rel="noopener" title={t('Download')} aria-label={t('Download {name}', { name: file.name })} onClick={(e) => e.stopPropagation()}>
         <Download className="h-3 w-3" />
       </a>
     </Button>
@@ -54,9 +55,9 @@ function RenameRow({ path, depth, onSave, onCancel }: { path: string; depth: num
   }
   return (
     <form onSubmit={submit} className="flex items-center gap-2 px-2 py-1" style={{ paddingLeft: 8 + depth * INDENT }}>
-      <Input name="name" defaultValue={current} autoFocus aria-label={`New name for ${current}`} className="h-7 text-sm" />
-      <Button type="submit" size="sm" variant="outline" className="h-7" disabled={busy}>Save</Button>
-      <Button type="button" size="sm" variant="ghost" className="h-7" onClick={onCancel}>Cancel</Button>
+      <Input name="name" defaultValue={current} autoFocus aria-label={t('New name for {current}', { current })} className="h-7 text-sm" />
+      <Button type="submit" size="sm" variant="outline" className="h-7" disabled={busy}>{t('Save')}</Button>
+      <Button type="button" size="sm" variant="ghost" className="h-7" onClick={onCancel}>{t('Cancel')}</Button>
     </form>
   )
 }
@@ -73,14 +74,14 @@ export function TorrentContentTab({ hash }: { hash: string }) {
   const tree = useMemo(() => buildFileTree(files ?? []), [files])
 
   const want = (indexes: number[], wanted: boolean) =>
-    setPriority.mutateAsync({ hash, id: indexes.join('|'), priority: wanted ? 1 : 0 }).catch(() => toast.error("Couldn't change which files download"))
+    setPriority.mutateAsync({ hash, id: indexes.join('|'), priority: wanted ? 1 : 0 }).catch(() => toast.error(t('Couldn\'t change which files download')))
 
   const rename = (node: FileTreeNode, name: string) => {
     const newPath = getRenamedPath(node.path, name)
     return action.mutateAsync({
       work: () => (node.kind === 'file' ? qbitClient.renameFile(hash, node.path, newPath) : qbitClient.renameFolder(hash, node.path, newPath)),
-      failed: node.kind === 'file' ? 'Failed to rename file' : 'Failed to rename folder',
-    }).then(() => { setRenaming(null); toast.success('Renamed'); return true }, () => false)
+      failed: node.kind === 'file' ? t('Failed to rename file') : t('Failed to rename folder'),
+    }).then(() => { setRenaming(null); toast.success(t('Renamed')); return true }, () => false)
   }
 
   const toggleOpen = (path: string) => setClosed(current => {
@@ -91,7 +92,7 @@ export function TorrentContentTab({ hash }: { hash: string }) {
   })
 
   const renameButton = (node: FileTreeNode) => (
-    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label={`Rename ${node.name}`} title="Rename" onClick={(e) => { e.stopPropagation(); setRenaming(node.path) }}>
+    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label={t('Rename {name}', { name: node.name })} title={t('Rename')} onClick={(e) => { e.stopPropagation(); setRenaming(node.path) }}>
       <Pencil className="h-3 w-3" />
     </Button>
   )
@@ -120,7 +121,7 @@ export function TorrentContentTab({ hash }: { hash: string }) {
       <div key={node.path}>
         <div className={cn(row, 'font-medium')} style={pad} onClick={() => want(node.indexes, node.wanted !== 'all')}>
           <WantedIcon state={node.wanted} />
-          <button type="button" className="rounded p-0.5 hover:bg-muted" aria-label={open ? `Collapse ${node.name}` : `Expand ${node.name}`} aria-expanded={open} onClick={(e) => { e.stopPropagation(); toggleOpen(node.path) }}>
+          <button type="button" className="rounded p-0.5 hover:bg-muted" aria-label={open ? t('Collapse {name}', { name: node.name }) : t('Expand {name}', { name: node.name })} aria-expanded={open} onClick={(e) => { e.stopPropagation(); toggleOpen(node.path) }}>
             <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-90')} />
           </button>
           <span className="min-w-0 flex-1 truncate text-sm" title={node.name}>{node.name}</span>
@@ -140,12 +141,12 @@ export function TorrentContentTab({ hash }: { hash: string }) {
   return (
     <div className="flex min-h-0 flex-col">
       <div className="flex justify-between border-b px-4 py-2 text-sm text-muted-foreground">
-        <span>{all.length} {all.length === 1 ? 'file' : 'files'}</span>
-        <span>Downloading {wanted.length} ({bytes(wanted)} of {bytes(all)})</span>
+        <span>{all.length === 1 ? t('1 file') : t('{count} files', { count: all.length })}</span>
+        <span>{t('Downloading {count} ({size} of {total})', { count: wanted.length, size: bytes(wanted), total: bytes(all) })}</span>
       </div>
       <div className="flex-1 overflow-y-auto py-1">
-        {isLoading ? <p className="py-8 text-center text-muted-foreground">Loading files...</p>
-          : tree.length === 0 ? <p className="py-8 text-center text-muted-foreground">No files yet</p>
+        {isLoading ? <p className="py-8 text-center text-muted-foreground">{t('Loading files...')}</p>
+          : tree.length === 0 ? <p className="py-8 text-center text-muted-foreground">{t('No files yet')}</p>
           : tree.map(node => render(node, 0))}
       </div>
     </div>

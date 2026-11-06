@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
 import { copyText } from '@/lib/clipboard'
 import type { Cookie } from '@/types'
+import { t } from '@/i18n'
 
 const selectClass = 'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-2 text-sm'
 
@@ -25,33 +26,33 @@ export function ScanDirsEditor({ value, onChange, disabled }: { value: unknown; 
 
   return (
     <div className="space-y-2">
-      {rows.length === 0 && <p className="text-xs text-muted-foreground">No watched folders</p>}
+      {rows.length === 0 && <p className="text-xs text-muted-foreground">{t('No watched folders')}</p>}
       {rows.map(([path, target], i) => (
         <div key={i} className="space-y-1 rounded-md border p-2">
           <div className="flex gap-2">
-            <Input aria-label="Watched folder" placeholder="Folder to watch" value={path} disabled={disabled} onChange={(e) => update(rows.map((row, j) => (j === i ? [e.target.value, row[1]] : row)))} className="h-8 text-sm" />
-            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" aria-label="Remove watched folder" disabled={disabled} onClick={() => update(rows.filter((_, j) => j !== i))}>
+            <Input aria-label={t('Watched folder')} placeholder={t('Folder to watch')} value={path} disabled={disabled} onChange={(e) => update(rows.map((row, j) => (j === i ? [e.target.value, row[1]] : row)))} className="h-8 text-sm" />
+            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" aria-label={t('Remove watched folder')} disabled={disabled} onClick={() => update(rows.filter((_, j) => j !== i))}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
           <select
-            aria-label="Save torrents from this folder to"
+            aria-label={t('Save torrents from this folder to')}
             value={typeof target === 'string' ? 'other' : String(target)}
             disabled={disabled}
             onChange={(e) => update(rows.map((row, j) => (j === i ? [row[0], e.target.value === 'other' ? '' : (Number(e.target.value) as 0 | 1)] : row)))}
             className={selectClass}
           >
-            <option value="0">Save to the watched folder</option>
-            <option value="1">Save to the default save path</option>
-            <option value="other">Save to another folder</option>
+            <option value="0">{t('Save to the watched folder')}</option>
+            <option value="1">{t('Save to the default save path')}</option>
+            <option value="other">{t('Save to another folder')}</option>
           </select>
           {typeof target === 'string' && (
-            <Input aria-label="Save folder" placeholder="Save folder" value={target} disabled={disabled} onChange={(e) => update(rows.map((row, j) => (j === i ? [row[0], e.target.value] : row)))} className="h-8 text-sm" />
+            <Input aria-label={t('Save folder')} placeholder={t('Save folder')} value={target} disabled={disabled} onChange={(e) => update(rows.map((row, j) => (j === i ? [row[0], e.target.value] : row)))} className="h-8 text-sm" />
           )}
         </div>
       ))}
       <Button type="button" size="sm" variant="outline" disabled={disabled} onClick={() => update([...rows, ['', 0]])}>
-        <Plus className="mr-1 h-4 w-4" /> Add folder
+        <Plus className="mr-1 h-4 w-4" />{' '}{t('Add folder')}
       </Button>
     </div>
   )
@@ -66,9 +67,9 @@ export function ApiKeyField({ value }: { value: unknown }) {
       const next = await qbitClient.rotateApiKey()
       setKey(next)
       setShown(next)
-      toast.success('New API key created', { description: 'Copy it now. Anything using the old key stops working.' })
+      toast.success(t('New API key created'), { description: t('Copy it now. Anything using the old key stops working.') })
     } catch (e) {
-      toast.error("Couldn't create an API key", { description: e instanceof Error ? e.message : undefined })
+      toast.error(t('Couldn\'t create an API key'), { description: e instanceof Error ? e.message : undefined })
     }
   }
 
@@ -77,19 +78,19 @@ export function ApiKeyField({ value }: { value: unknown }) {
       await qbitClient.deleteApiKey()
       setKey('')
       setShown(null)
-      toast.success('API key deleted')
+      toast.success(t('API key deleted'))
     } catch (e) {
-      toast.error("Couldn't delete the API key", { description: e instanceof Error ? e.message : undefined })
+      toast.error(t('Couldn\'t delete the API key'), { description: e instanceof Error ? e.message : undefined })
     }
   }
 
   return (
     <div className="space-y-2">
-      <p className="break-all font-mono text-xs">{shown ?? (key ? `${key.slice(0, 6)}${'•'.repeat(12)}` : 'No API key')}</p>
+      <p className="break-all font-mono text-xs">{shown ?? (key ? `${key.slice(0, 6)}${'•'.repeat(12)}` : t('No API key'))}</p>
       <div className="flex flex-wrap gap-2">
-        {shown && <Button type="button" size="sm" variant="outline" onClick={async () => { if (await copyText(shown)) toast.success('API key copied') }}>Copy</Button>}
-        <ConfirmAction buttonLabel={key ? 'Create a new key' : 'Create a key'} label="Create an API key" title={key ? 'Replace the API key?' : 'Create an API key?'} message="Apps can use an API key instead of your password. A new key replaces the old one, which stops working." confirmLabel="Create" onConfirm={rotate} />
-        {key && <ConfirmAction buttonLabel="Delete key" label="Delete the API key" title="Delete the API key?" message="Anything using it stops working." confirmLabel="Delete" onConfirm={remove} />}
+        {shown && <Button type="button" size="sm" variant="outline" onClick={async () => { if (await copyText(shown)) toast.success(t('API key copied')) }}>{t('Copy')}</Button>}
+        <ConfirmAction buttonLabel={key ? t('Create a new key') : t('Create a key')} label={t('Create an API key')} title={key ? t('Replace the API key?') : t('Create an API key?')} message={t('Apps can use an API key instead of your password. A new key replaces the old one, which stops working.')} confirmLabel={t('Create')} onConfirm={rotate} />
+        {key && <ConfirmAction buttonLabel={t('Delete key')} label={t('Delete the API key')} title={t('Delete the API key?')} message={t('Anything using it stops working.')} confirmLabel={t('Delete')} onConfirm={remove} />}
       </div>
     </div>
   )
@@ -99,8 +100,8 @@ export function NetworkInterfaceField({ value, onChange, disabled }: { value: un
   const { data: interfaces } = useQuery({ queryKey: ['app', 'interfaces'], queryFn: () => qbitClient.getNetworkInterfaces() })
   const current = typeof value === 'string' ? value : ''
   return (
-    <select aria-label="Network interface" value={current} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value="">Any interface</option>
+    <select aria-label={t('Network interface')} value={current} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={selectClass}>
+      <option value="">{t('Any interface')}</option>
       {current && !interfaces?.some(i => i.value === current) && <option value={current}>{current}</option>}
       {(interfaces ?? []).map(i => <option key={i.value} value={i.value}>{i.name}</option>)}
     </select>
@@ -111,10 +112,10 @@ export function InterfaceAddressField({ value, iface, onChange, disabled }: { va
   const { data: addresses } = useQuery({ queryKey: ['app', 'interfaceAddresses', iface], queryFn: () => qbitClient.getInterfaceAddresses(iface) })
   const current = typeof value === 'string' ? value : ''
   return (
-    <select aria-label="IP address to bind to" value={current} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value="">All addresses</option>
-      <option value="0.0.0.0">All IPv4 addresses</option>
-      <option value="::">All IPv6 addresses</option>
+    <select aria-label={t('IP address to bind to')} value={current} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={selectClass}>
+      <option value="">{t('All addresses')}</option>
+      <option value="0.0.0.0">{t('All IPv4 addresses')}</option>
+      <option value="::">{t('All IPv6 addresses')}</option>
       {current && !['', '0.0.0.0', '::'].includes(current) && !addresses?.includes(current) && <option value={current}>{current}</option>}
       {(addresses ?? []).map(address => <option key={address} value={address}>{address}</option>)}
     </select>
@@ -126,22 +127,22 @@ export function ShutdownButton() {
   const shutdown = async () => {
     try {
       await qbitClient.shutdown()
-      toast.success('qBittorrent is shutting down', { description: 'This page stops working until qBittorrent is started again.' })
+      toast.success(t('qBittorrent is shutting down'), { description: t('This page stops working until qBittorrent is started again.') })
     } catch (e) {
-      toast.error("Couldn't shut down qBittorrent", { description: e instanceof Error ? e.message : undefined })
+      toast.error(t('Couldn\'t shut down qBittorrent'), { description: e instanceof Error ? e.message : undefined })
     }
   }
   return (
     <div className="space-y-1">
       <ConfirmAction
-        buttonLabel="Shut down qBittorrent"
-        label="Shut down qBittorrent"
-        title="Shut down qBittorrent?"
-        message="All downloads and seeding stop, and this page can't start it again. Starting it again has to happen wherever qBittorrent runs."
-        confirmLabel="Shut down"
+        buttonLabel={t('Shut down qBittorrent')}
+        label={t('Shut down qBittorrent')}
+        title={t('Shut down qBittorrent?')}
+        message={t('All downloads and seeding stop, and this page can\'t start it again. Starting it again has to happen wherever qBittorrent runs.')}
+        confirmLabel={t('Shut down')}
         onConfirm={shutdown}
       />
-      <p className="text-xs text-muted-foreground">Stops every transfer and closes qBittorrent. Starting it again has to happen on its machine.</p>
+      <p className="text-xs text-muted-foreground">{t('Stops every transfer and closes qBittorrent. Starting it again has to happen on its machine.')}</p>
     </div>
   )
 }
@@ -152,24 +153,24 @@ export function TestEmailButton({ disabled, unsaved }: { disabled?: boolean; uns
     setSending(true)
     try {
       await qbitClient.sendTestEmail()
-      toast.success('Test email sent', { description: 'Check the inbox you entered.' })
+      toast.success(t('Test email sent'), { description: t('Check the inbox you entered.') })
     } catch (e) {
-      toast.error("Couldn't send the test email", { description: e instanceof Error ? e.message : undefined })
+      toast.error(t('Couldn\'t send the test email'), { description: e instanceof Error ? e.message : undefined })
     } finally {
       setSending(false)
     }
   }
   return (
     <div className="space-y-1">
-      <Button type="button" size="sm" variant="outline" disabled={disabled || sending || unsaved} onClick={send}>Send a test email</Button>
-      {unsaved && <p className="text-xs text-muted-foreground">Save your changes first. The test uses the saved settings.</p>}
+      <Button type="button" size="sm" variant="outline" disabled={disabled || sending || unsaved} onClick={send}>{t('Send a test email')}</Button>
+      {unsaved && <p className="text-xs text-muted-foreground">{t('Save your changes first. The test uses the saved settings.')}</p>}
     </div>
   )
 }
 
 export function TrackerUrlList({ value }: { value: unknown }) {
   const list = typeof value === 'string' ? value.trim() : ''
-  return list ? <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 text-xs">{list}</pre> : <p className="text-xs text-muted-foreground">Nothing downloaded yet</p>
+  return list ? <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 text-xs">{list}</pre> : <p className="text-xs text-muted-foreground">{t('Nothing downloaded yet')}</p>
 }
 
 const emptyCookie = (): Cookie => ({ name: '', domain: '', path: '/', value: '', expirationDate: Math.floor(Date.now() / 1000) + 365 * 86400 })
@@ -184,7 +185,7 @@ export function CookiesEditor() {
     if (data && rows === null) setRows(data)
   }, [data, rows])
 
-  if (isLoading || !rows) return <p className="text-xs text-muted-foreground">Loading cookies...</p>
+  if (isLoading || !rows) return <p className="text-xs text-muted-foreground">{t('Loading cookies...')}</p>
 
   const update = (i: number, changes: Partial<Cookie>) => setRows(rows.map((row, j) => (j === i ? { ...row, ...changes } : row)))
 
@@ -195,9 +196,9 @@ export function CookiesEditor() {
       await qbitClient.setCookies(cookies)
       const fresh = await refetch()
       setRows(fresh.data ?? cookies)
-      toast.success('Cookies saved')
+      toast.success(t('Cookies saved'))
     } catch (e) {
-      toast.error("Couldn't save cookies", { description: e instanceof Error ? e.message : undefined })
+      toast.error(t('Couldn\'t save cookies'), { description: e instanceof Error ? e.message : undefined })
     } finally {
       setSaving(false)
     }
@@ -205,28 +206,28 @@ export function CookiesEditor() {
 
   return (
     <div className="space-y-2">
-      {rows.length === 0 && <p className="text-xs text-muted-foreground">No cookies</p>}
+      {rows.length === 0 && <p className="text-xs text-muted-foreground">{t('No cookies')}</p>}
       {rows.map((row, i) => (
         <div key={i} className="grid grid-cols-2 gap-2 rounded-md border p-2">
-          <Input aria-label="Cookie domain" placeholder="Domain" value={row.domain} onChange={(e) => update(i, { domain: e.target.value })} className="h-8 text-sm" />
-          <Input aria-label="Cookie path" placeholder="Path" value={row.path} onChange={(e) => update(i, { path: e.target.value })} className="h-8 text-sm" />
-          <Input aria-label="Cookie name" placeholder="Name" value={row.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8 text-sm" />
-          <Input aria-label="Cookie value" placeholder="Value" value={row.value} onChange={(e) => update(i, { value: e.target.value })} className="h-8 text-sm" />
+          <Input aria-label={t('Cookie domain')} placeholder={t('Domain')} value={row.domain} onChange={(e) => update(i, { domain: e.target.value })} className="h-8 text-sm" />
+          <Input aria-label={t('Cookie path')} placeholder={t('Path')} value={row.path} onChange={(e) => update(i, { path: e.target.value })} className="h-8 text-sm" />
+          <Input aria-label={t('Cookie name')} placeholder={t('Name')} value={row.name} onChange={(e) => update(i, { name: e.target.value })} className="h-8 text-sm" />
+          <Input aria-label={t('Cookie value')} placeholder={t('Value')} value={row.value} onChange={(e) => update(i, { value: e.target.value })} className="h-8 text-sm" />
           <Input
-            aria-label="Cookie expiry date"
+            aria-label={t('Cookie expiry date')}
             type="date"
             value={new Date(row.expirationDate * 1000).toISOString().slice(0, 10)}
             onChange={(e) => update(i, { expirationDate: Math.floor(new Date(e.target.value).getTime() / 1000) || row.expirationDate })}
             className="h-8 text-sm"
           />
-          <Button type="button" size="sm" variant="ghost" onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setRows(rows.filter((_, j) => j !== i))}>{t('Remove')}</Button>
         </div>
       ))}
       <div className="flex gap-2">
         <Button type="button" size="sm" variant="outline" onClick={() => setRows([...rows, emptyCookie()])}>
-          <Plus className="mr-1 h-4 w-4" /> Add cookie
+          <Plus className="mr-1 h-4 w-4" />{' '}{t('Add cookie')}
         </Button>
-        <Button type="button" size="sm" disabled={saving} onClick={save}>Save cookies</Button>
+        <Button type="button" size="sm" disabled={saving} onClick={save}>{t('Save cookies')}</Button>
       </div>
     </div>
   )
