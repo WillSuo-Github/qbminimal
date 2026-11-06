@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyMainDataUpdate, type MainData } from './mainData'
+import { applyMainDataUpdate, totalSpeeds, type MainData } from './mainData'
 
 const first = applyMainDataUpdate(null, {
   rid: 1,
@@ -44,5 +44,11 @@ describe('applyMainDataUpdate', () => {
     const before: MainData = JSON.parse(JSON.stringify(first))
     applyMainDataUpdate(first, { rid: 2, torrents: { a: { progress: 1 } }, torrents_removed: ['b'] })
     expect(first).toEqual(before)
+  })
+
+  it('adds up the torrents\' speeds for the global speeds', () => {
+    const torrents = { a: { dlspeed: 1000, upspeed: 20 }, b: { dlspeed: 500, upspeed: 0 }, c: {} } as unknown as MainData['torrents']
+    expect(totalSpeeds(torrents)).toEqual({ down: 1500, up: 20 })
+    expect(totalSpeeds({})).toEqual({ down: 0, up: 0 })
   })
 })

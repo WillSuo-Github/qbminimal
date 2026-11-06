@@ -5,7 +5,7 @@ import { ConnectionBanner } from '@/components/ConnectionBanner'
 import { DropOverlay } from '@/components/DropOverlay'
 import { SpeedLimitToggle } from '@/components/SpeedLimitToggle'
 import { PAGES, type PageId } from '@/components/navigation'
-import { useTransferInfo } from '@/hooks/useApi'
+import { useTotalSpeeds } from '@/hooks/useApi'
 import { useSession } from '@/hooks/useSession'
 import { formatBytes } from '@/lib/format'
 import { readStored, writeStored } from '@/lib/storage'
@@ -21,8 +21,8 @@ interface LayoutProps {
 // Current speeds: stacked on phones, side by side on wider screens. Fixed-width digits keep
 // them from jumping about as they change.
 function Speeds() {
-  const { data: state } = useTransferInfo()
-  if (!state) return null
+  const { data: speeds } = useTotalSpeeds()
+  if (!speeds) return null
   const row = (arrow: string, color: string, speed = 0) => (
     <span className="flex items-center justify-end gap-1">
       <span className={color}>{arrow}</span>
@@ -31,8 +31,8 @@ function Speeds() {
   )
   return (
     <div className="flex flex-col items-end text-[10px] leading-tight tabular-nums whitespace-nowrap sm:flex-row sm:gap-2.5 sm:text-xs" aria-label={t('Current speeds')}>
-      {row('↓', 'text-green-500', state.dl_info_speed)}
-      {row('↑', 'text-blue-500', state.up_info_speed)}
+      {row('↓', 'text-green-500', speeds.down)}
+      {row('↑', 'text-blue-500', speeds.up)}
     </div>
   )
 }

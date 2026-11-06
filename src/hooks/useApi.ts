@@ -4,7 +4,7 @@ import { hasStatus, qbitClient, type LogLevels } from '@/lib/api'
 import { supportsFeature, type ApiFeature } from '@/lib/apiVersion'
 import { parseBannedPeers, removeBannedPeer } from '@/lib/bannedPeers'
 import { findFinished } from '@/lib/finished'
-import { applyMainDataUpdate, type MainData } from '@/lib/mainData'
+import { applyMainDataUpdate, totalSpeeds, type MainData } from '@/lib/mainData'
 import { finishNoticesOn, notifyInBackground } from '@/lib/notify'
 import { PIECE_DONE } from '@/lib/pieces'
 import { recordSpeeds } from '@/lib/speedHistory'
@@ -80,7 +80,7 @@ function useMainData<T>(select: (data: MainData) => T) {
     queryFn: async () => {
       const previous = queryClient.getQueryData<MainData>(MAIN_DATA) ?? null
       const next = applyMainDataUpdate(previous, await qbitClient.getMainData(previous?.rid ?? 0))
-      recordSpeeds({ time: Date.now(), down: next.serverState.dl_info_speed ?? 0, up: next.serverState.up_info_speed ?? 0 })
+      recordSpeeds({ time: Date.now(), ...totalSpeeds(next.torrents) })
       if (finishNoticesOn()) announceFinished(findFinished(previous?.torrents, next.torrents))
       return next
     },
@@ -92,9 +92,12 @@ function useMainData<T>(select: (data: MainData) => T) {
 const pickTorrents = (data: MainData) => Object.values(data.torrents)
 const pickServerState = (data: MainData) => data.serverState
 const pickTrackers = (data: MainData) => data.trackers
+const pickSpeeds = (data: MainData) => totalSpeeds(data.torrents)
 
 export const useTorrents = () => useMainData(pickTorrents)
 export const useTransferInfo = () => useMainData(pickServerState)
+// Download and upload speed in all, added up from the torrents so it matches the list.
+export const useTotalSpeeds = () => useMainData(pickSpeeds)
 
 // True while the list's refreshes fail, apart from a signed-out session, which shows the login form.
 export function useConnectionProblem() {

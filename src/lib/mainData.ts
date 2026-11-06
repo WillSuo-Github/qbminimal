@@ -74,3 +74,15 @@ export function applyMainDataUpdate(previous: MainData | null, update: MainDataU
     serverState: { ...(full ? {} : previous.serverState), ...update.server_state },
   }
 }
+
+// The sum of the torrents' own speeds. qBittorrent measures its global speeds separately, at another
+// moment and over another span, so they rarely match the list; this sum always does.
+export function totalSpeeds(torrents: Record<string, Torrent>): { down: number; up: number } {
+  let down = 0
+  let up = 0
+  for (const torrent of Object.values(torrents)) {
+    down += Math.max(torrent.dlspeed ?? 0, 0)
+    up += Math.max(torrent.upspeed ?? 0, 0)
+  }
+  return { down, up }
+}
