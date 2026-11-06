@@ -1,0 +1,82 @@
+import { useState } from 'react'
+import { FolderPlus, Plus, RefreshCw } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/PageHeader'
+import { useRSSFeeds, useRSSItems } from '@/hooks/useApi'
+import { toast } from '@/hooks/use-toast'
+import { qbitClient } from '@/lib/api'
+import { ArticleList } from './ArticleList'
+import { FeedTree } from './FeedTree'
+import { RSSPromptDialog } from './RSSPromptDialog'
+import { useRSSAction, type Prompt } from './rssActions'
+import { RSSRules } from './RSSRules'
+
+export function RSSView() {
+  const queryClient = useQueryClient()
+  const feedsQuery = useRSSFeeds()
+  const [openFeed, setOpenFeed] = useState<string | null>(null)
+  const articlesQuery = useRSSItems(openFeed ?? '')
+  const [prompt, setPrompt] = useState<Prompt | null>(null)
+  const action = useRSSAction()
+
+  const feeds = feedsQuery.data?.feeds ?? []
+  const folders = feedsQuery.data?.folders ?? []
+  const feed = feeds.find(f => f.uid === openFeed)
+
+  // Read state is a convenience, so a failure to save it isn't worth a message.
+  const markRead = (path: string, articleId?: string) =>
+    qbitClient.markAsRead(path, articleId).then(() => queryClient.invalidateQueries({ queryKey: ['rss'] }), () => undefined)
+
+  const refresh = (path: string, label: string) => action.mutate({ work: () => qbitClient.refreshRSSItem(path), done: label, failed: 'Failed to refresh' })
+
+  const addTorrent = async (url: string) => {
+    try {
+      await qbitClient.addTorrentUrl(url)
+      toast.success('Torrent added')
+      void queryClient.invalidateQueries({ queryKey: ['torrents'] })
+    } catch (error) {
+      toast.error("Couldn't add the torrent", { description: error instanceof Error ? error.message : undefined })
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <PageHeader title="RSS" description="Feeds, articles, and rules that download new episodes for you" />
+
+      {feedsQuery.isLoading ? <p className="py-8 text-center text-muted-foreground">Loading feeds...</p> : (
+        <div className="flex flex-col gap-4 md:flex-row md:items-start">
+          <Card className="w-full gap-2 md:w-80">
+            <CardHeader className="flex items-center justify-between gap-1">
+              <CardTitle>Feeds</CardTitle>
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" aria-label="Refresh all feeds" title="Refresh all feeds" disabled={feeds.length === 0} onClick={() => refresh('', 'Refreshing all feeds')}><RefreshCw className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" aria-label="New folder" title="New folder" onClick={() => setPrompt({ kind: 'addFolder' })}><FolderPlus className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" aria-label="Add feed" title="Add feed" onClick={() => setPrompt({ kind: 'addFeed' })}><Plus className="h-4 w-4" /></Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <FeedTree feeds={feeds} folders={folders} selected={openFeed} onSelect={setOpenFeed} onRefresh={refresh} onMarkRead={markRead} onPrompt={setPrompt} />
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0 flex-1 gap-2">
+            <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="min-w-0 truncate">{feed?.title ?? 'Articles'}</CardTitle>
+              {feed && <Button size="sm" variant="ghost" disabled={feed.unreadCount === 0} onClick={() => markRead(feed.path)}>Mark all as read</Button>}
+            </CardHeader>
+            <CardContent>
+              {!feed ? <p className="py-8 text-center text-muted-foreground">Pick a feed to see its articles</p>
+                : articlesQuery.isLoading ? <p className="py-8 text-center text-muted-foreground">Loading articles...</p>
+                : <ArticleList articles={articlesQuery.data?.articles ?? []} onOpened={a => { if (!a.isRead) void markRead(feed.path, a.id) }} onDownload={addTorrent} />}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <RSSRules />
+      {prompt && <RSSPromptDialog prompt={prompt} folders={folders} onClose={() => setPrompt(null)} />}
+    </div>
+  )
+}

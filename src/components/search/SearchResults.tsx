@@ -1,0 +1,132 @@
+import { useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, ExternalLink } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { NativeSelect } from '@/components/NativeSelect'
+import { formatBytes } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import type { SearchResult } from '@/types'
+
+type SortKey = 'fileName' | 'fileSize' | 'nbSeeders' | 'nbLeechers' | 'siteUrl'
+
+const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
+  { key: 'fileName', label: 'Name' },
+  { key: 'fileSize', label: 'Size', numeric: true },
+  { key: 'nbSeeders', label: 'Seeds', numeric: true },
+  { key: 'nbLeechers', label: 'Leeches', numeric: true },
+  { key: 'siteUrl', label: 'Source' },
+]
+
+const PER_PAGE = 20
+const host = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+
+// Found torrents, sortable, 20 a page: a table on wide screens and a list on phones.
+export function SearchResults({ results, onAdd }: { results: SearchResult[]; onAdd: (result: SearchResult) => void }) {
+  const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'nbSeeders', desc: true })
+  const [page, setPage] = useState(1)
+
+  const sorted = useMemo(() => {
+    const value = (r: SearchResult) => (sort.key === 'siteUrl' ? host(r.siteUrl) : r[sort.key])
+    return [...results].sort((a, b) => {
+      const x = value(a)
+      const y = value(b)
+      const order = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { sensitivity: 'base', numeric: true })
+      return sort.desc ? -order : order
+    })
+  }, [results, sort])
+
+  const pages = Math.max(1, Math.ceil(sorted.length / PER_PAGE))
+  const current = Math.min(page, pages)
+  const shown = sorted.slice((current - 1) * PER_PAGE, current * PER_PAGE)
+  // Numbers start with the largest first, text from A.
+  const sortBy = (key: SortKey) => {
+    setSort(previous => ({ key, desc: previous.key === key ? !previous.desc : COLUMNS.find(c => c.key === key)?.numeric ?? false }))
+    setPage(1)
+  }
+
+  const links = (result: SearchResult) => (
+    <span className="flex items-center gap-1">
+      {result.fileUrl && (
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Add ${result.fileName}`} title="Add" onClick={(e) => { e.stopPropagation(); onAdd(result) }}>
+          <Download className="h-4 w-4" />
+        </Button>
+      )}
+      {result.descrLink && (
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <a href={result.descrLink} target="_blank" rel="noopener noreferrer" aria-label="Open its page" title="Open its page" onClick={(e) => e.stopPropagation()}><ExternalLink className="h-4 w-4" /></a>
+        </Button>
+      )}
+    </span>
+  )
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2 md:hidden">
+        <span className="text-sm text-muted-foreground">{results.length} results</span>
+        <NativeSelect aria-label="Sort results" className="h-8" value={`${sort.key}:${sort.desc ? 'desc' : 'asc'}`} onChange={(e) => {
+          const [key, direction] = e.target.value.split(':')
+          setSort({ key: key as SortKey, desc: direction === 'desc' })
+          setPage(1)
+        }}>
+          {COLUMNS.flatMap(c => [
+            <option key={`${c.key}:desc`} value={`${c.key}:desc`}>{c.label} {c.numeric ? '(most first)' : '(Z to A)'}</option>,
+            <option key={`${c.key}:asc`} value={`${c.key}:asc`}>{c.label} {c.numeric ? '(fewest first)' : '(A to Z)'}</option>,
+          ])}
+        </NativeSelect>
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border bg-card md:block">
+        <table className="w-full text-sm tabular-nums">
+          <thead className="border-b">
+            <tr>
+              {COLUMNS.map(c => (
+                <th key={c.key} className="h-10 px-3 font-medium text-muted-foreground" aria-sort={sort.key === c.key ? (sort.desc ? 'descending' : 'ascending') : undefined}>
+                  <button type="button" onClick={() => sortBy(c.key)} className={cn('flex w-full items-center gap-1 hover:text-foreground', c.numeric && 'justify-end', sort.key === c.key && 'text-foreground')}>
+                    {c.label}
+                    {sort.key === c.key && (sort.desc ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />)}
+                  </button>
+                </th>
+              ))}
+              <th className="w-24"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map(result => (
+              <tr key={`${result.fileUrl}|${result.descrLink}`} className="cursor-pointer border-b last:border-0 hover:bg-muted/50" onClick={() => result.fileUrl && onAdd(result)}>
+                <td className="max-w-[28rem] truncate px-3 py-1.5 font-medium" title={result.fileName}>{result.fileName}</td>
+                <td className="px-3 py-1.5 text-right">{formatBytes(result.fileSize)}</td>
+                <td className="px-3 py-1.5 text-right text-green-600 dark:text-green-400">{result.nbSeeders}</td>
+                <td className="px-3 py-1.5 text-right text-red-500">{result.nbLeechers}</td>
+                <td className="max-w-[12rem] truncate px-3 py-1.5 text-muted-foreground">{host(result.siteUrl)}</td>
+                <td className="px-2 py-1">{links(result)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ul className="space-y-2 md:hidden">
+        {shown.map(result => (
+          <li key={`${result.fileUrl}|${result.descrLink}`} className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2.5">
+            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => result.fileUrl && onAdd(result)}>
+              <span className="block text-[10px] text-muted-foreground">{result.nbSeeders} seeds · {result.nbLeechers} leeches</span>
+              <span className="block text-xs font-medium [overflow-wrap:anywhere]">{result.fileName}</span>
+              <span className="block truncate text-[10px] text-muted-foreground">{formatBytes(result.fileSize)} · {host(result.siteUrl)}</span>
+            </button>
+            {links(result)}
+          </li>
+        ))}
+      </ul>
+
+      {pages > 1 && (
+        <div className="flex items-center justify-between px-2 text-sm">
+          <span className="text-muted-foreground">{(current - 1) * PER_PAGE + 1}-{Math.min(current * PER_PAGE, sorted.length)} of {sorted.length}</span>
+          <span className="flex items-center gap-2">
+            <Button variant="outline" size="sm" aria-label="Previous page" disabled={current === 1} onClick={() => setPage(current - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="tabular-nums">{current} / {pages}</span>
+            <Button variant="outline" size="sm" aria-label="Next page" disabled={current === pages} onClick={() => setPage(current + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}

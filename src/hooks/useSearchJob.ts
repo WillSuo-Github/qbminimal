@@ -1,0 +1,99 @@
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from '@/hooks/use-toast'
+import { qbitClient } from '@/lib/api'
+import { getSearchEngineError } from '@/lib/searchErrors'
+import { rememberSearchPattern } from '@/lib/searchPatterns'
+
+// Searches longer than this are stopped, keeping what they found.
+const TIME_LIMIT_MS = 60_000
+
+interface Job {
+  id: number
+  running: boolean
+  startedAt: number
+  // The newest log warning before the search, to spot the plugin errors it causes. null when
+  // the log couldn't be read, or when reopening an older search.
+  logMark: number | null
+}
+
+// Runs a qBittorrent search: starts it, polls its results every second until it finishes or
+// times out, and reports plugin errors qBittorrent only writes to its log.
+export function useSearchJob() {
+  const queryClient = useQueryClient()
+  const [job, setJob] = useState<Job | null>(null)
+
+  const finish = async (current: Job, found: number) => {
+    setJob({ ...current, running: false })
+    void queryClient.invalidateQueries({ queryKey: ['search', 'status'] })
+    if (current.logMark === null) return
+    // qBittorrent logs one error per failed search, without naming the plugin.
+    const warnings = await qbitClient.getLogWarnings(current.logMark).catch(() => [])
+    const problem = warnings.map(entry => getSearchEngineError(entry.message)).find(Boolean)
+    if (!problem) return
+    if (found > 0) toast.warning('A search plugin failed, so results may be incomplete.', { description: problem })
+    else toast.error('Search failed.', { description: problem })
+  }
+
+  const results = useQuery({
+    queryKey: ['search', 'results', job?.id],
+    enabled: !!job,
+    refetchInterval: job?.running ? 1000 : false,
+    queryFn: async () => {
+      const current = job!
+      const data = await qbitClient.getSearchResults(current.id)
+      const found = data.results?.length ?? 0
+      if (current.running) {
+        if (data.status === 'Stopped' || data.status === 'Completed') {
+          void finish(current, found)
+        } else if (Date.now() - current.startedAt > TIME_LIMIT_MS) {
+          await qbitClient.stopSearch(current.id).catch(() => undefined)
+          toast.warning('The search ran for a minute, so it was stopped. These are the results so far.')
+          void finish({ ...current, logMark: null }, found)
+        }
+      }
+      return data.results ?? []
+    },
+  })
+
+  const start = async (pattern: string, plugins: string, category: string) => {
+    // Checked first only to explain a search that can't find anything.
+    const installed = await qbitClient.searchPlugins().catch(() => null)
+    if (installed && !installed.some(plugin => plugin.enabled)) {
+      toast.error(installed.length ? 'Every search plugin is turned off. Turn one on under Manage plugins.' : 'No search plugins are installed. Add one under Manage plugins.')
+      return
+    }
+    try {
+      const warnings = await qbitClient.getLogWarnings().catch(() => null)
+      const { id } = await qbitClient.startSearch(pattern, plugins, category)
+      rememberSearchPattern(id, pattern)
+      setJob({ id, running: true, startedAt: Date.now(), logMark: warnings ? warnings.at(-1)?.id ?? -1 : null })
+    } catch (error) {
+      toast.error('Search failed.', { description: error instanceof Error ? error.message : undefined })
+    }
+  }
+
+  const cancel = async () => {
+    if (!job?.running) return
+    setJob({ ...job, running: false })
+    try {
+      await qbitClient.stopSearch(job.id)
+      toast.info('Search stopped')
+    } catch {
+      toast.error("Couldn't stop the search in qBittorrent")
+    }
+  }
+
+  // Shows the results of a search qBittorrent still holds.
+  const open = (id: number) => setJob({ id, running: false, startedAt: Date.now(), logMark: null })
+
+  return {
+    jobId: job?.id ?? null,
+    running: !!job?.running,
+    searched: !!job,
+    results: results.data ?? [],
+    start,
+    cancel,
+    open,
+  }
+}

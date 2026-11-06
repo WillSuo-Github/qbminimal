@@ -1,0 +1,74 @@
+import { ArrowUpDown, Columns3, LayoutList, Search, Table2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import type { TorrentList } from '@/hooks/useTorrentList'
+import type { SortField } from '@/lib/listSettings'
+import { DEFAULT_COLUMN_LAYOUT, getColumn, toggleColumn, type ColumnLayout } from '@/lib/torrentColumns'
+
+// What a card shows, or matters most, for sorting cards. The table sorts from its headers.
+const CARD_SORTS: SortField[] = ['name', 'state', 'progress', 'size', 'dlspeed', 'upspeed', 'eta', 'ratio', 'num_seeds', 'num_leechs', 'added_on', 'completion_on', 'category']
+
+interface TorrentToolbarProps {
+  list: TorrentList
+  filtersOpen: boolean
+  onToggleFilters: () => void
+  columns: ColumnLayout
+  onColumnsChange: (layout: ColumnLayout) => void
+}
+
+export function TorrentToolbar({ list, filtersOpen, onToggleFilters, columns, onColumnsChange }: TorrentToolbarProps) {
+  const arrow = list.sort.direction === 'asc' ? '↑' : '↓'
+  return (
+    <>
+      <Button variant={filtersOpen || list.filtered ? 'secondary' : 'outline'} size="icon" className="h-8 w-8" aria-label="Search and filter" title="Search and filter" aria-expanded={filtersOpen} aria-controls="torrent-filters" onClick={onToggleFilters}>
+        <Search className="h-4 w-4" />
+      </Button>
+
+      {list.showTable ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Columns" title="Choose columns">
+              <Columns3 className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-[70vh] w-56 overflow-y-auto">
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Drag headers to reorder, or drag their edges to resize</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {columns.order.map(id => (
+              <DropdownMenuCheckboxItem key={id} checked={!columns.hidden.includes(id)} disabled={id === 'name'} onSelect={(e) => e.preventDefault()} onCheckedChange={() => onColumnsChange(toggleColumn(columns, id))}>
+                {getColumn(id).label}
+              </DropdownMenuCheckboxItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onColumnsChange(DEFAULT_COLUMN_LAYOUT)}>Reset columns</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              Sort: {getColumn(list.sort.field).label} {arrow}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-[60vh] overflow-y-auto">
+            {CARD_SORTS.map(field => (
+              <DropdownMenuItem key={field} onClick={() => list.sortBy(field)}>
+                {getColumn(field).label} {list.sort.field === field && arrow}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      <div className="flex rounded-md border" role="group" aria-label="View">
+        <Button variant={list.showTable ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-r-none" aria-label="Table view" title="Table view" aria-pressed={list.showTable} onClick={() => list.showAsTable(true)}>
+          <Table2 className="h-4 w-4" />
+        </Button>
+        <Button variant={list.showTable ? 'ghost' : 'secondary'} size="icon" className="h-8 w-8 rounded-l-none" aria-label="Card view" title="Card view" aria-pressed={!list.showTable} onClick={() => list.showAsTable(false)}>
+          <LayoutList className="h-4 w-4" />
+        </Button>
+      </div>
+    </>
+  )
+}
