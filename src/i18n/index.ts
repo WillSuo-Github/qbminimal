@@ -13,7 +13,7 @@ export const LANGUAGES = [
   { code: 'fr', name: 'Français' },
   { code: 'it', name: 'Italiano' },
   { code: 'nl', name: 'Nederlands' },
-  { code: 'pt', name: 'Português (Brasil)' },
+  { code: 'pt', name: 'Português (Portugal)' },
   { code: 'tr', name: 'Türkçe' },
   { code: 'ru', name: 'Русский' },
   { code: 'ar', name: 'العربية' },

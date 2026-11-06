@@ -17,7 +17,7 @@ Built with React, TypeScript, Vite, and Tailwind CSS.
 - **Logs**, statistics with a live speed graph, connection status, and the alternative speed limit switch. A notice says when qBittorrent can't be reached.
 - **Notifications** when a torrent finishes, if you turn them on.
 - **Keyboard shortcuts** for the torrent list. Press `?` to see them.
-- **Languages**: English, Arabic, Bengali, Chinese (Simplified and Traditional), Dutch, French, German, Hindi, Italian, Japanese, Korean, Portuguese (Brazil), Russian, Spanish, and Turkish, with the page mirrored for Arabic. The language follows the browser, or pick one in Settings.
+- **Languages**: English, Arabic, Bengali, Chinese (Simplified and Traditional), Dutch, French, German, Hindi, Italian, Japanese, Korean, Portuguese (Portugal), Russian, Spanish (Spain), and Turkish, with the page mirrored for Arabic. The language follows the browser, or pick one in Settings.
 - **Settings**: every qBittorrent preference, shown only when your qBittorrent version has it.
 - A sidebar you can hide on wide screens.
 - Light and dark themes that follow your device, and a layout made for phones, including when added to the home screen.
@@ -69,7 +69,7 @@ npx tsc -b
 
 The text is translated with `t('English text')`, and each language is a file in `src/i18n` that maps the English text to its translation. To add a language, copy `src/i18n/de.ts`, translate the values, and add the language to `LANGUAGES` and `LOADERS` in `src/i18n/index.ts`. Keep each `{placeholder}` as it is. For a language written right to left, also add it to `RIGHT_TO_LEFT`; use start and end classes (`ps-2`, `text-end`) rather than left and right ones so the page mirrors.
 
-The translations were machine translated and haven't been reviewed by native speakers yet, so corrections are welcome.
+Where qBittorrent's own translations have the same text, qbminimal uses their wording and terms, so the words match what you see in qBittorrent. The rest was machine translated and hasn't been reviewed by native speakers yet, so corrections are welcome.
 
 `npm run i18n:check` lists text that a language doesn't cover yet.
 
