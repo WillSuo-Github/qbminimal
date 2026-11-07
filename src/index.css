@@ -137,9 +137,12 @@
   /* A line exactly as tall as the capitals, which Silkscreen draws 0.625em high (its font data
      says 0.7em, so trimming to the cap height would leave them low). The font puts the baseline
      0.7025em down such a line, so the letters are lifted 0.0775em to fill it. The flex row
-     then centres the capitals on the header's icons; the tail of the q hangs below. */
+     then centres the capitals on the header's icons; the tail of the q hangs below. The lift is
+     a position, not a transform: Safari draws transformed text in the glass header at a fraction
+     of a pixel, which smears the pixel font. */
   line-height: 0.625;
-  translate: 0 -0.0775em;
+  position: relative;
+  top: -0.0775em;
 }
 
 /* On/off switches. Safari 17.4 and newer draw their own iOS switch, tinted by accent-color; main.tsx
@@ -236,6 +239,13 @@
   textarea {
     font-size: max(16px, 1em) !important;
   }
+}
+
+/* iPhone Home Screen apps with a see-through status bar: iOS lays the page out shorter than the
+   screen, by about the status bar's height. main.tsx measures the shortfall as --standalone-gap,
+   and everything held to the bottom of the screen reaches that much further down. 0 elsewhere. */
+:root {
+  --standalone-gap: 0px;
 }
 
 /* Phones: the tab bar's height (set by Layout) plus its gap above the home indicator. Bars and

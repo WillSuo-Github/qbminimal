@@ -94,7 +94,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
     // layout, open it zoomed in, and push the tab bar out of sight. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap
     // near the bottom would then reopen the toolbar instead of reaching the tab bar.
     // --sidebar-width lets panels fixed to the window line up with the main column.
-    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:min-h-0 max-md:overflow-hidden">
+    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:bottom-[calc(-1*var(--standalone-gap,0px))] max-md:min-h-0 max-md:overflow-hidden">
       <header ref={headerRef} className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] max-md:absolute max-md:inset-x-0">
         <div className="flex h-14 items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <div className="flex min-w-0 items-center gap-2">
@@ -134,7 +134,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
       <nav
         ref={navRef}
         aria-label={t('Pages')}
-        className="glass fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 rounded-full md:hidden"
+        className="glass fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))-var(--standalone-gap,0px))] z-30 rounded-full md:hidden"
       >
         <div className="flex justify-around px-1 py-1.5">
           {PAGES.map(({ id, label, icon: Icon }) => (
