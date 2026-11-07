@@ -93,8 +93,11 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
     // of them. Nothing may make it wider than the screen: iPhone Safari would then widen the whole
     // layout, open it zoomed in, and push the tab bar out of sight. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap
     // near the bottom would then reopen the toolbar instead of reaching the tab bar.
+    // The frame is as tall as the whole screen (100lvh), not just the part above Safari's address
+    // bar, so the page runs on behind that bar instead of leaving a blank strip there. The page's
+    // end gets that hidden height as extra room (100lvh - 100dvh, zero where no bar overlaps).
     // --sidebar-width lets panels fixed to the window line up with the main column.
-    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-0 max-md:min-h-0 max-md:overflow-hidden">
+    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-x-0 max-md:top-0 max-md:h-lvh max-md:min-h-0 max-md:overflow-hidden">
       <header ref={headerRef} className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] max-md:absolute max-md:inset-x-0">
         <div className="flex h-14 items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <div className="flex min-w-0 items-center gap-2">
@@ -124,7 +127,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
               <LogoutButton className="mt-auto" />
             </aside>
           )}
-          <main className="min-w-0 flex-1 pt-4 pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] max-md:pt-[calc(var(--header-height,3.5rem)+1rem)] max-md:pb-[calc(var(--bottom-nav-height,5rem)+1rem)]">
+          <main className="min-w-0 flex-1 pt-4 pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] max-md:pt-[calc(var(--header-height,3.5rem)+1rem)] max-md:pb-[calc(var(--bottom-nav-height,5rem)+1rem+100lvh-100dvh)]">
             {children}
           </main>
         </div>
