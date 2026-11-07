@@ -71,12 +71,10 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
     writeStored(SIDEBAR_KEY, sidebarShown ? 'hidden' : null)
     setSidebarShown(!sidebarShown)
   }
-  const scroller = useRef<HTMLDivElement>(null)
   const { header: headerRef, nav: navRef } = useBarSizes()
 
   // A newly opened page starts at its top.
   useEffect(() => {
-    scroller.current?.scrollTo(0, 0)
     window.scrollTo(0, 0)
   }, [page])
 
@@ -88,17 +86,14 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
   ))
 
   return (
-    // Below the md width (1200px) the page fills the screen and scrolls by itself, under a glass header and a
-    // floating glass tab bar, with room at both ends so its start and end can always come clear
-    // of them. Nothing may make it wider than the screen: iPhone Safari would then widen the whole
-    // layout, open it zoomed in, and push the tab bar out of sight. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap
-    // near the bottom would then reopen the toolbar instead of reaching the tab bar.
-    // The frame is as tall as the whole screen (100lvh), not just the part above Safari's address
-    // bar, so the page runs on behind that bar instead of leaving a blank strip there. The page's
-    // end gets that hidden height as extra room (100lvh - 100dvh, zero where no bar overlaps).
+    // Below the md width (1200px) the window scrolls the page, under a glass header and a floating
+    // glass tab bar, with room at the end so it can always come clear of the tab bar. Only a scrolling
+    // window lets iPhone Safari show the page on behind its address bar; a fixed frame stops at it
+    // and leaves a blank strip. Nothing may make the page wider than the screen: iPhone Safari would
+    // then widen the whole layout, open it zoomed in, and push the tab bar out of sight.
     // --sidebar-width lets panels fixed to the window line up with the main column.
-    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:fixed max-md:inset-x-0 max-md:top-0 max-md:h-lvh max-md:min-h-0 max-md:overflow-hidden">
-      <header ref={headerRef} className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] max-md:absolute max-md:inset-x-0">
+    <div style={{ '--sidebar-width': sidebarShown ? '12rem' : '0px' } as CSSProperties} className="min-h-screen bg-background max-md:overflow-x-clip">
+      <header ref={headerRef} className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)]">
         <div className="flex h-14 items-center justify-between gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
           <div className="flex min-w-0 items-center gap-2">
             {/* The tab bar holds the pages on phones, so this corner only needs a way out. */}
@@ -119,7 +114,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
         <ConnectionBanner />
       </header>
 
-      <div ref={scroller} className="max-md:absolute max-md:inset-0 max-md:overflow-y-auto max-md:overscroll-x-none max-md:overscroll-y-contain">
+      <div>
         <div className="flex">
           {sidebarShown && (
             <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-48 flex-shrink-0 flex-col gap-1 self-start overflow-y-auto border-e p-2 pb-4 md:flex">
@@ -127,7 +122,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
               <LogoutButton className="mt-auto" />
             </aside>
           )}
-          <main className="min-w-0 flex-1 pt-4 pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] max-md:pt-[calc(var(--header-height,3.5rem)+1rem)] max-md:pb-[calc(var(--bottom-nav-height,5rem)+1rem+100lvh-100dvh)]">
+          <main className="min-w-0 flex-1 pt-4 pb-4 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] max-md:pb-[calc(var(--bottom-nav-height,5rem)+1rem)]">
             {children}
           </main>
         </div>
@@ -139,7 +134,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
       <nav
         ref={navRef}
         aria-label={t('Pages')}
-        className="glass fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-30 rounded-full md:hidden"
+        className="glass fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[max(var(--nav-gap),env(safe-area-inset-bottom))] z-30 rounded-full md:hidden"
       >
         <div className="flex justify-around px-1 py-1.5">
           {PAGES.map(({ id, label, icon: Icon }) => (

@@ -242,10 +242,22 @@
   }
 }
 
-/* Phones: the tab bar's height (set by Layout) plus its gap above the home indicator. Bars and
-   panels kept above it, and the page's room at its end, use this. */
+/* Phones: the tab bar's height (set by Layout) plus its gap above the screen's edge or the home
+   indicator. Bars and panels kept above it, and the page's room at its end, use this. */
 :root {
-  --bottom-nav-height: calc(var(--nav-bar-height, 3.75rem) + max(0.5rem, env(safe-area-inset-bottom)));
+  --nav-gap: 0.5rem;
+  --bottom-nav-height: calc(var(--nav-bar-height, 3.75rem) + max(var(--nav-gap), env(safe-area-inset-bottom)));
+}
+/* iPhone Safari in its own window, upright: the page ends at Safari's address bar, which floats
+   with room of its own above it, so the tab bar can sit lower, closer to that bar. Not lower than
+   4px: at 2px Safari takes the tab bar for part of its toolbar and paints the space below it
+   white, hiding the page that shows behind its bar. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: browser) and (orientation: portrait) and (max-width: 32rem) {
+    :root {
+      --nav-gap: 4px;
+    }
+  }
 }
 @media (min-width: 1200px) { /* --breakpoint-md */
   :root {

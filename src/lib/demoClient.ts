@@ -24,6 +24,7 @@ import type { ShareLimits } from './shareLimits'
 // (npm run demo). Actions change its state, and speeds drift a little on every refresh.
 
 const DEMO_WEB_API: string = import.meta.env.VITE_DEMO_WEB_API || '2.11.2'
+const DEMO_SESSION_KEY = 'qbminimal.demoSession'
 const NOW = Math.floor(Date.now() / 1000)
 const GiB = 1024 ** 3
 const MiB = 1024 ** 2
@@ -51,6 +52,18 @@ const SEED: DemoTorrent[] = [
   { name: 'archlinux-2026.11.01-x86_64.iso', size: 1.4 * GiB, progress: 1, down: 0, up: 890_000, category: 'Linux', tags: '', tracker: 'udp://tracker.archlinux.org:6969/announce', addedDaysAgo: 5, ratio: 7.9 },
   { name: 'Big Buck Bunny (2008) [4K]', size: 680 * MiB, progress: 0, down: 0, up: 0, category: 'Movies', tags: 'open-movie', tracker: 'udp://tracker.opentrackr.org:1337/announce', addedDaysAgo: 0.01, ratio: 0, stopped: true },
 ]
+
+// The seed torrents, repeated with numbered names when the address asks for more
+// (?torrents=40), for trying long lists.
+function demoTorrents(): DemoTorrent[] {
+  const wanted = Number(new URLSearchParams(globalThis.location?.search ?? '').get('torrents'))
+  const count = Number.isFinite(wanted) && wanted > SEED.length ? Math.min(wanted, 2000) : SEED.length
+  return Array.from({ length: count }, (_, i) => {
+    const seed = SEED[i % SEED.length]
+    const copy = Math.floor(i / SEED.length)
+    return { ...seed, name: copy ? `${seed.name} (${copy + 1})` : seed.name }
+  })
+}
 
 // A stable fake hash per name, so the same torrent keeps its hash between refreshes.
 function fakeHash(name: string): string {
@@ -124,7 +137,7 @@ const SEARCH_HITS: SearchResult[] = SEED.map((t, i) => ({
 }))
 
 export class DemoClient implements ApiClient {
-  private torrents = SEED.map(t => ({ ...t }))
+  private torrents = demoTorrents()
   private prefs: Record<string, unknown> | null = null
   private banned: string[] = []
   private cookies: Cookie[] = []
@@ -148,9 +161,19 @@ export class DemoClient implements ApiClient {
   }
 
   onUnauthorized(): void {}
-  async checkSession() { return false }
-  async login() { return true }
-  async logout() {}
+  // Signing in lasts for the browser session, so a reload keeps the demo open; ?signedin in the
+  // address skips the form, for trying it on a device.
+  async checkSession() {
+    if (new URLSearchParams(globalThis.location?.search ?? '').has('signedin')) return true
+    try { return sessionStorage.getItem(DEMO_SESSION_KEY) === '1' } catch { return false }
+  }
+  async login() {
+    try { sessionStorage.setItem(DEMO_SESSION_KEY, '1') } catch { /* private mode: sign in each time */ }
+    return true
+  }
+  async logout() {
+    try { sessionStorage.removeItem(DEMO_SESSION_KEY) } catch { /* nothing kept */ }
+  }
 
   async getAppVersion() { return isApiAtLeast(DEMO_WEB_API, [2, 16, 0]) ? 'v5.3.0' : 'v5.2.3' }
   async getWebApiVersion() { return DEMO_WEB_API }

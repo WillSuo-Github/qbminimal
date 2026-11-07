@@ -80,7 +80,7 @@ To try the app without a qBittorrent server, run the demo. It keeps pretend torr
 npm run demo
 ```
 
-Set `VITE_DEMO_WEB_API=2.17.0` to make the demo act like a newer qBittorrent.
+Set `VITE_DEMO_WEB_API=2.17.0` to make the demo act like a newer qBittorrent. Add `?torrents=40` to the address for a longer list, and `?signedin` to skip the sign-in form.
 
 Checks, also run by CI on every push and pull request:
 
