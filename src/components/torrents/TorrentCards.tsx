@@ -1,5 +1,5 @@
 import type { ComponentType, ReactElement, ReactNode } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Clock, HardDrive, Users } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes } from '@/lib/format'
 import { DOWN_SPEED_COLOR, formatEta, getStateColor, getStateLabel, ratioColor, UP_SPEED_COLOR, peerPair as pair } from '@/lib/torrentState'
@@ -22,11 +22,19 @@ interface TorrentCardsProps {
 // A number with an icon in place of its name, which the tooltip and screen readers give. Each
 // sits at the end of a slot with room for its longest usual value, so the gaps between facts are
 // all the same and none moves when a number changes.
-function Fact({ icon: Icon, label, className, children }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; label: string; className?: string; children: ReactNode }) {
+// A fact in a slot as wide as its placeholder, like the speeds' "999.9 KB/s": the icon at the
+// slot's start and the value at its end, so a changing value never moves what follows.
+function Fact({ icon: Icon, label, placeholder, className, children }: { icon?: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; label: string; placeholder: string; className?: string; children: ReactNode }) {
+  const row = (content: ReactNode, hidden?: boolean) => (
+    <span className={cn('col-start-1 row-start-1 flex items-center justify-between gap-0.5', hidden && 'invisible')} aria-hidden>
+      {Icon && <Icon className="h-2.5 w-2.5" aria-hidden />}
+      <span className="ms-auto">{content}</span>
+    </span>
+  )
   return (
-    <span className={cn('flex shrink-0 items-center justify-end gap-0.5', className)} title={label}>
-      <Icon className="h-2.5 w-2.5" aria-hidden />
-      <span aria-hidden>{children}</span>
+    <span className={cn('grid shrink-0', className)} title={label}>
+      {row(placeholder, true)}
+      {row(children)}
       <span className="sr-only">{label}</span>
     </span>
   )
@@ -79,19 +87,19 @@ export function TorrentCards({ torrents, selected, showCheckboxes, onToggle, ope
               </div>
               <p className="text-xs font-medium [overflow-wrap:anywhere]">{torrent.name}</p>
               {/* One line of facts, each with an icon. Hovering or a screen reader gives the words. */}
-              {/* Packed from the start with one even gap. The changing values sit in slots wide enough
-                  for them, so nothing after them moves; the size has a slot too, so cards line up. */}
+              {/* Packed from the start with one even gap. Every fact sits in a slot sized for a typical
+                  largest value, so nothing moves when values change and the cards line up. */}
               <div className="mt-0.5 flex items-center gap-x-3 overflow-hidden text-[10px] whitespace-nowrap text-muted-foreground tabular-nums">
-                <span className="shrink-0">{formatBytes(torrent.size)}</span>
+                <Fact icon={HardDrive} label={t('Size')} placeholder="999.9 MB">{formatBytes(torrent.size)}</Fact>
                 <Speed icon={ArrowDown} bytes={torrent.dlspeed} color={DOWN_SPEED_COLOR} label={t('Down speed')} />
                 <Speed icon={ArrowUp} bytes={torrent.upspeed} color={UP_SPEED_COLOR} label={t('Up speed')} />
                 {torrent.progress < 1 ? (
-                  <Fact icon={Clock} label={t('ETA {eta}', { eta: formatEta(torrent.eta) })}>{formatEta(torrent.eta)}</Fact>
+                  <Fact icon={Clock} label={t('ETA {eta}', { eta: formatEta(torrent.eta) })} placeholder="99.99">{formatEta(torrent.eta)}</Fact>
                 ) : (
-                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })} className={ratioColor(torrent.ratio)}>{torrent.ratio.toFixed(2)}</Fact>
+                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })} placeholder="99.99" className={ratioColor(torrent.ratio)}>{torrent.ratio.toFixed(2)}</Fact>
                 )}
                 {/* Connected seeds and peers; the title adds how many are in the swarm. */}
-                <Fact icon={Users} label={t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })}>
+                <Fact icon={Users} label={t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })} placeholder="99/99">
                   {Math.max(torrent.num_seeds, 0)}/{Math.max(torrent.num_leechs, 0)}
                 </Fact>
               </div>
