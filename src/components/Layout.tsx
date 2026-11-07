@@ -134,7 +134,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
       <nav
         ref={navRef}
         aria-label={t('Pages')}
-        className="glass fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[max(var(--nav-gap),env(safe-area-inset-bottom))] z-30 rounded-full md:hidden"
+        className="glass glass-flat fixed inset-x-[max(0.75rem,env(safe-area-inset-left))] bottom-[max(var(--nav-gap),env(safe-area-inset-bottom))] z-30 rounded-full md:hidden"
       >
         <div className="flex justify-around px-1 py-1.5">
           {PAGES.map(({ id, label, icon: Icon }) => (

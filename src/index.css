@@ -220,6 +220,14 @@
     0 10px 30px -12px rgb(0 0 0 / 0.7);
 }
 
+/* The tab bar keeps only the lit top edge, without a shadow below it. */
+.glass.glass-flat {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45);
+}
+.dark .glass.glass-flat {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.09);
+}
+
 /* Reduce Transparency, or more contrast, in the system settings: solid bars. */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .glass,

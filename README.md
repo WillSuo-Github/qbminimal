@@ -27,6 +27,12 @@ On a phone, as cards and as a table:
   <img src="docs/screenshots/mobile-table.png" alt="The torrent list as a table on a phone" width="260">
 </p>
 
+In Safari on an iPhone, where the list runs on behind the address bar:
+
+<p>
+  <img src="docs/screenshots/iphone.png" alt="The torrent list as cards in Safari on an iPhone, continuing behind Safari's address bar under the floating tab bar" width="260">
+</p>
+
 The screenshots come from the demo (`npm run demo`), so the torrents are made up.
 
 ## Features
