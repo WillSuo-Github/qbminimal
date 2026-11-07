@@ -1,11 +1,13 @@
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
 
 // Binary sizes with at most one decimal, dropping a trailing ".0": 1536 -> "1.5 KB", 1024 -> "1 KB".
+// From 1000 of a unit it moves to the next ("1 MB", not "1011.3 KB"), so a value never needs more
+// than "999.9" and fits the room the cards and header keep for it.
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
   let value = bytes
   let unit = 0
-  while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
+  while (Math.round(value * 10) / 10 >= 1000 && unit < BYTE_UNITS.length - 1) {
     value /= 1024
     unit++
   }
