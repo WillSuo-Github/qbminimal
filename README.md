@@ -1,8 +1,33 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="docs/logo-light.png" alt="qBittorrent" height="48">
+  </picture>
+</p>
+
 # qbminimal
 
 A minimal, phone-friendly Web UI for [qBittorrent](https://www.qbittorrent.org/). It replaces qBittorrent's built-in browser interface with a cleaner one that works just as well on a phone as on a desktop.
 
 Built with React, TypeScript, Vite, and Tailwind CSS.
+
+## Screenshots
+
+On a desktop, as a table with a torrent's details below it, and as cards:
+
+<p>
+  <img src="docs/screenshots/desktop-table.png" alt="The torrent list as a table on a desktop, with the selected torrent's details below it" width="49%">
+  <img src="docs/screenshots/desktop-cards.png" alt="The torrent list as cards on a desktop" width="49%">
+</p>
+
+On a phone, as cards and as a table:
+
+<p>
+  <img src="docs/screenshots/mobile-cards.png" alt="The torrent list as cards on a phone" width="260">
+  <img src="docs/screenshots/mobile-table.png" alt="The torrent list as a table on a phone" width="260">
+</p>
+
+The screenshots come from the demo (`npm run demo`), so the torrents are made up.
 
 ## Features
 
