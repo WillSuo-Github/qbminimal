@@ -10,11 +10,14 @@
     <link rel="icon" type="image/png" href="/src/assets/icons/favicon.png" />
     <link rel="apple-touch-icon" href="/src/assets/icons/apple-touch-icon.png" />
     <link rel="manifest" href="manifest.json" />
-    <!-- Added to a phone's home screen, it opens like an app, drawing under the status bar. -->
+    <!-- Added to a phone's home screen, it opens like an app. The status bar is opaque black, with the
+         page below it: since iOS 26 a see-through one (black-translucent) lays the app out a status
+         bar short, leaving a band at the bottom, and blurs the top of the page. iOS reads this only
+         when the app is added to the Home Screen. -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="qBittorrent" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <!-- iPhone Safari would otherwise turn numbers such as peer addresses into phone links in its
          own link color, which can be hard to read on the page. -->
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />

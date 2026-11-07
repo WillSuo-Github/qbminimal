@@ -32,14 +32,14 @@ function Fact({ icon: Icon, label, className, children }: { icon: ComponentType<
   )
 }
 
-// A speed in the list's colors, or a faint dash while it's zero, as in the table. The arrow starts
-// a slot with room for "999.9 KB/s" and the number ends it; the rare longer speed widens it.
+// A speed in the list's colors. The arrow starts a slot with room for "999.9 KB/s" and the number
+// ends it; the rare longer speed widens it. At zero the slot stays, empty, so nothing after it moves.
 function Speed({ icon: Icon, bytes, color, label }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; bytes: number; color: string; label: string }) {
-  const moving = bytes > 0
+  if (bytes <= 0) return <span className="min-w-[6.6em] shrink-0" aria-hidden />
   return (
-    <span className={cn('flex min-w-[6.6em] shrink-0 items-center justify-between gap-0.5', moving ? color : 'text-muted-foreground/60')} title={label}>
+    <span className={cn('flex min-w-[6.6em] shrink-0 items-center justify-between gap-0.5', color)} title={label}>
       <Icon className="h-2.5 w-2.5" aria-hidden />
-      {moving ? `${formatBytes(bytes)}/s` : '-'}
+      {formatBytes(bytes)}/s
     </span>
   )
 }

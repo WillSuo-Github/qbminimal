@@ -99,7 +99,7 @@ export function BottomScrollbar({ target }: { target: RefObject<HTMLElement | nu
       style={{
         left: geometry.left,
         width: geometry.width,
-        bottom: 'calc(var(--bottom-nav-height, 0px) + var(--details-height, 0px) + 0.25rem - var(--standalone-gap, 0px))',
+        bottom: 'calc(var(--bottom-nav-height, 0px) + var(--details-height, 0px) + 0.25rem)',
       }}
     >
       <div ref={track} onPointerDown={page} className="relative h-3 touch-none rounded-full border bg-background/80 shadow-sm backdrop-blur">

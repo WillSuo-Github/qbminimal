@@ -184,15 +184,15 @@ export function TorrentDetailsDialog({ torrent, onClose }: DetailsProps) {
   return (
     <DialogPrimitive.Root open onOpenChange={(open) => !open && onClose()}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 bottom-[calc(-1*var(--standalone-gap,0px))] z-50 bg-black/30 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/30 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           data-keeps-swipes
           className={cn(
             'fixed z-50 flex flex-col overflow-hidden border bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom',
             large
-              ? 'inset-x-0 bottom-[calc(-1*var(--standalone-gap,0px))] h-[calc(100dvh+var(--standalone-gap,0px)-env(safe-area-inset-top)-0.5rem)] rounded-t-[1.75rem] border-b-0 pb-[env(safe-area-inset-bottom)]'
-              : 'inset-x-2 bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))-var(--standalone-gap,0px))] h-[62dvh] rounded-[2rem]',
+              ? 'inset-x-0 bottom-0 h-[calc(100dvh-env(safe-area-inset-top)-0.5rem)] rounded-t-[1.75rem] border-b-0 pb-[env(safe-area-inset-bottom)]'
+              : 'inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] h-[62dvh] rounded-[2rem]',
             offset === null && 'transition-[height,inset,border-radius,translate] duration-300 ease-out',
           )}
           // Following the finger, a little stiffer upwards.

@@ -143,6 +143,7 @@
   line-height: 0.625;
   position: relative;
   top: -0.0775em;
+  top: round(-0.0775em, 1px);
 }
 
 /* On/off switches. Safari 17.4 and newer draw their own iOS switch, tinted by accent-color; main.tsx
@@ -239,13 +240,6 @@
   textarea {
     font-size: max(16px, 1em) !important;
   }
-}
-
-/* iPhone Home Screen apps with a see-through status bar: iOS lays the page out shorter than the
-   screen, by about the status bar's height. main.tsx measures the shortfall as --standalone-gap,
-   and everything held to the bottom of the screen reaches that much further down. 0 elsewhere. */
-:root {
-  --standalone-gap: 0px;
 }
 
 /* Phones: the tab bar's height (set by Layout) plus its gap above the home indicator. Bars and
