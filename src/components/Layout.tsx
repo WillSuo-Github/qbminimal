@@ -88,7 +88,7 @@ export function Layout({ page, onNavigate, children }: LayoutProps) {
   ))
 
   return (
-    // Below 768px the page fills the screen and scrolls by itself, under a glass header and a
+    // Below the md width (1200px) the page fills the screen and scrolls by itself, under a glass header and a
     // floating glass tab bar, with room at both ends so its start and end can always come clear
     // of them. Nothing may make it wider than the screen: iPhone Safari would then widen the whole
     // layout, open it zoomed in, and push the tab bar out of sight. A scrolling window would make iPhone Safari collapse its toolbar, and the next tap

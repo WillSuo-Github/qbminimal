@@ -35,9 +35,9 @@ function Fact({ icon: Icon, label, className, children }: { icon: ComponentType<
 // A speed in the list's colors. The arrow starts a slot with room for "999.9 KB/s" and the number
 // ends it; the rare longer speed widens it. At zero the slot stays, empty, so nothing after it moves.
 function Speed({ icon: Icon, bytes, color, label }: { icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>; bytes: number; color: string; label: string }) {
-  if (bytes <= 0) return <span className="min-w-[6.6em] shrink-0" aria-hidden />
+  // Idle speeds read "0 B/s" like the header's, faded instead of colored.
   return (
-    <span className={cn('flex min-w-[6.6em] shrink-0 items-center justify-between gap-0.5', color)} title={label}>
+    <span className={cn('flex min-w-[6.6em] shrink-0 items-center justify-between gap-0.5', bytes > 0 ? color : 'text-muted-foreground/60')} title={label}>
       <Icon className="h-2.5 w-2.5" aria-hidden />
       {formatBytes(bytes)}/s
     </span>
@@ -82,13 +82,13 @@ export function TorrentCards({ torrents, selected, showCheckboxes, onToggle, ope
               {/* Packed from the start with one even gap. The changing values sit in slots wide enough
                   for them, so nothing after them moves; the size has a slot too, so cards line up. */}
               <div className="mt-0.5 flex items-center gap-x-3 overflow-hidden text-[10px] whitespace-nowrap text-muted-foreground tabular-nums">
-                <span className="min-w-[4.2em] shrink-0">{formatBytes(torrent.size)}</span>
+                <span className="shrink-0">{formatBytes(torrent.size)}</span>
                 <Speed icon={ArrowDown} bytes={torrent.dlspeed} color={DOWN_SPEED_COLOR} label={t('Down speed')} />
                 <Speed icon={ArrowUp} bytes={torrent.upspeed} color={UP_SPEED_COLOR} label={t('Up speed')} />
                 {torrent.progress < 1 ? (
-                  <Fact icon={Clock} label={t('ETA {eta}', { eta: formatEta(torrent.eta) })} className="w-[5.7em]">{formatEta(torrent.eta)}</Fact>
+                  <Fact icon={Clock} label={t('ETA {eta}', { eta: formatEta(torrent.eta) })}>{formatEta(torrent.eta)}</Fact>
                 ) : (
-                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })} className={cn('w-[5.7em]', ratioColor(torrent.ratio))}>{torrent.ratio.toFixed(2)}</Fact>
+                  <Fact icon={ArrowUpDown} label={t('Ratio {value}', { value: torrent.ratio.toFixed(2) })} className={ratioColor(torrent.ratio)}>{torrent.ratio.toFixed(2)}</Fact>
                 )}
                 {/* Connected seeds and peers; the title adds how many are in the swarm. */}
                 <Fact icon={Users} label={t('Seeds {seeds} · Peers {peers}', { seeds: pair(torrent.num_seeds, torrent.num_complete), peers: pair(torrent.num_leechs, torrent.num_incomplete) })}>

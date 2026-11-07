@@ -247,7 +247,7 @@
 :root {
   --bottom-nav-height: calc(var(--nav-bar-height, 3.75rem) + max(0.5rem, env(safe-area-inset-bottom)));
 }
-@media (min-width: 48rem) {
+@media (min-width: 1200px) { /* --breakpoint-md */
   :root {
     --bottom-nav-height: 0px;
   }
