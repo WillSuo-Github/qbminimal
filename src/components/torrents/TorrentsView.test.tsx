@@ -41,69 +41,62 @@ function renderView() {
 }
 
 const row = (name: string) => within(screen.getByRole('table')).getByText(name).closest('tr') as HTMLElement
-const selectedNames = () => screen.queryAllByRole('row').filter(r => r.getAttribute('aria-selected') === 'true').map(r => within(r).getAllByRole('cell')[2].textContent)
-
 describe('the torrent list', () => {
   beforeEach(() => {
     api.deleteTorrents.mockClear()
     api.pauseTorrents.mockClear()
   })
 
-  it('selects a clicked row and opens its details', async () => {
-    await renderView()
-    await userEvent.click(row('bravo'))
-    expect(selectedNames()).toEqual(['bravo'])
-    expect(screen.getByRole('toolbar', { name: 'Selected torrents' })).toHaveTextContent('1 selected')
-    expect(await screen.findByRole('region', { name: 'Torrent details' })).toHaveTextContent('bravo')
-  })
-
-  it('adds with Ctrl, selects ranges with Shift, and closes on a second click', async () => {
+  it('opens and closes details without entering selection mode', async () => {
     await renderView()
     const user = userEvent.setup()
-    await user.click(row('alpha'))
-    await user.keyboard('{Shift>}')
-    await user.click(row('charlie'))
-    await user.keyboard('{/Shift}')
-    expect(selectedNames()).toEqual(['alpha', 'bravo', 'charlie'])
-    await user.keyboard('{Control>}')
     await user.click(row('bravo'))
-    await user.keyboard('{/Control}')
-    expect(selectedNames()).toEqual(['alpha', 'charlie'])
-
-    await user.click(row('delta'))
-    expect(selectedNames()).toEqual(['delta'])
-    await user.click(row('delta'))
-    expect(selectedNames()).toEqual([])
+    expect(screen.queryByRole('toolbar', { name: 'Selected torrents' })).toBeNull()
+    expect(screen.queryByRole('checkbox', { name: 'Select all' })).toBeNull()
+    expect(await screen.findByRole('region', { name: 'Torrent details' }, { timeout: 5000 })).toHaveTextContent('bravo')
+    await user.click(row('bravo'))
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Torrent details' })).toBeNull())
   })
 
-  it('moves with the arrow keys and clears with Escape', async () => {
+  it('moves focus and follows with details using the arrow keys', async () => {
     await renderView()
     const user = userEvent.setup()
     await user.click(row('alpha'))
     await user.keyboard('{ArrowDown}{ArrowDown}')
-    expect(selectedNames()).toEqual(['charlie'])
     expect(row('charlie')).toHaveFocus()
-    await user.keyboard('{Shift>}{ArrowUp}{/Shift}')
-    expect(selectedNames()).toEqual(['bravo', 'charlie'])
-    await user.keyboard('{Escape}{Escape}')
-    expect(selectedNames()).toEqual([])
+    expect(await screen.findByRole('region', { name: 'Torrent details' }, { timeout: 5000 })).toHaveTextContent('charlie')
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('region', { name: 'Torrent details' })).toBeNull()
   })
 
-  it('starts selecting on a long press and toggles with taps after that', async () => {
+  it('opens the torrent action menu on a touch hold', async () => {
     await renderView()
     const touch = { pointerType: 'touch', clientX: 10, clientY: 10 }
-    fireEvent.pointerDown(row('bravo'), touch)
-    await act(() => new Promise(resolve => setTimeout(resolve, 600)))
-    fireEvent.pointerUp(row('bravo'), touch)
-    fireEvent.click(row('bravo'))
-    expect(selectedNames()).toEqual(['bravo'])
-
-    fireEvent.pointerDown(row('delta'), touch)
-    fireEvent.pointerUp(row('delta'), touch)
-    fireEvent.click(row('delta'))
-    expect(selectedNames()).toEqual(['bravo', 'delta'])
+    const target = row('bravo')
+    fireEvent.pointerDown(target, touch)
+    await act(() => new Promise(resolve => setTimeout(resolve, 750)))
+    fireEvent.pointerUp(target, touch)
+    fireEvent.click(target)
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).getByText('bravo')).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'Torrent details' })).toBeNull()
+  })
+
+  it('hides and restores columns from the header menus without changing sort', async () => {
+    await renderView()
+    const user = userEvent.setup()
+    const name = screen.getByRole('columnheader', { name: 'Name' })
+    await user.click(within(name).getByRole('button'))
+    const order = name.getAttribute('aria-sort')
+    fireEvent.contextMenu(screen.getByRole('columnheader', { name: 'Size' }))
+    let menu = await screen.findByRole('menu')
+    await user.click(within(menu).getByRole('menuitemcheckbox', { name: /^Size$/ }))
+    expect(screen.queryByRole('columnheader', { name: 'Size' })).toBeNull()
+    expect(name.getAttribute('aria-sort')).toBe(order)
+    fireEvent.contextMenu(name)
+    menu = await screen.findByRole('menu')
+    await user.click(within(menu).getByRole('menuitemcheckbox', { name: /^Size$/ }))
+    expect(screen.getByRole('columnheader', { name: 'Size' })).toBeTruthy()
   })
 
   it('deletes with files when ticked, and the lock remembers it for next time', async () => {
@@ -122,17 +115,14 @@ describe('the torrent list', () => {
     expect(await screen.findByRole('checkbox', { name: 'Also delete the downloaded files' })).toBeChecked()
   })
 
-  it('acts on the selection from the right-click menu', async () => {
+  it('acts only on the torrent that opened the right-click menu', async () => {
     await renderView()
     const user = userEvent.setup()
     await user.click(row('alpha'))
-    await user.keyboard('{Control>}')
-    await user.click(row('charlie'))
-    await user.keyboard('{/Control}')
     fireEvent.contextMenu(row('charlie'))
     const menu = await screen.findByRole('menu')
-    expect(within(menu).getByText('2 torrents')).toBeTruthy()
+    expect(within(menu).getByText('charlie')).toBeTruthy()
     await user.click(within(menu).getByRole('menuitem', { name: 'Stop' }))
-    expect(api.pauseTorrents).toHaveBeenCalledWith(['h0', 'h2'])
+    expect(api.pauseTorrents).toHaveBeenCalledWith(['h2'])
   })
 })

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from 'react'
-import { Loader2, Upload, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { FileUp, Loader2, Magnet, Upload } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PageHeader } from '@/components/PageHeader'
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FreeSpaceHint } from './FreeSpaceHint'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -12,10 +12,10 @@ import { useCategories, useTags } from '@/hooks/useApi'
 import { toast } from '@/hooks/use-toast'
 import { qbitClient } from '@/lib/api'
 import {
-  DEFAULT_ADD_OPTIONS,
+  DOWNLOAD_ADD_OPTIONS,
   buildAddParams,
   describeAddResult,
-  parseLinks,
+  isMagnetLink,
   readMetadata,
   type AddTorrentOptions,
   type TorrentMetadata,
@@ -28,14 +28,6 @@ import { t } from '@/i18n'
 const selectClass = 'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-2 text-sm'
 const METADATA_POLL_MS = 1500
 const METADATA_TIMEOUT_MS = 120000
-
-// qBittorrent's file priorities: 0 skips the file.
-const FILE_PRIORITIES = [
-  { value: 1, label: t('Normal') },
-  { value: 6, label: t('High') },
-  { value: 7, label: t('Maximum') },
-  { value: 0, label: t('Don\'t download') },
-]
 
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
   return (
@@ -65,160 +57,157 @@ function CheckField({ id, label, checked, onChange }: { id: string; label: strin
   )
 }
 
-export function AddTorrentView() {
+type Source = File | string
+type SourceKind = 'torrent' | 'magnet'
+type Draft = { kind: SourceKind; file: File | null; link: string; pending: Source[] }
+
+const emptyDraft = (): Draft => ({ kind: 'torrent', file: null, link: '', pending: [] })
+const draftFor = (source: Source, pending: Source[]): Draft => typeof source === 'string'
+  ? { kind: 'magnet', file: null, link: source, pending }
+  : { kind: 'torrent', file: source, link: '', pending }
+
+type Preview = { source: Source; attempt: number } & (
+  | { metadata: TorrentMetadata; priorities: number[] }
+  | { error: string }
+)
+
+export function AddTorrentDialog({ onClose }: { onClose: () => void }) {
+  const [creator, setCreator] = useState(false)
+
+  return (
+    <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:max-w-xl sm:p-6">
+      <DialogHeader>
+        <DialogTitle>{creator ? t('Create torrent') : t('Add torrent')}</DialogTitle>
+        <DialogDescription>
+          {creator ? t('Create a .torrent from files on the server.') : t('Choose which files to download before starting.')}
+        </DialogDescription>
+      </DialogHeader>
+      {creator ? (
+        <>
+          <Button type="button" variant="outline" className="w-fit" onClick={() => setCreator(false)}>{t('Back to add torrent')}</Button>
+          <TorrentCreator />
+        </>
+      ) : <AddTorrentForm onClose={onClose} onCreate={() => setCreator(true)} />}
+    </DialogContent>
+  )
+}
+
+function AddTorrentForm({ onClose, onCreate }: { onClose: () => void; onCreate: () => void }) {
   const queryClient = useQueryClient()
   const { data: categories } = useCategories()
   const { data: tags } = useTags()
-  const [links, setLinks] = useState('')
-  const [files, setFiles] = useState<File[]>([])
-  const [options, setOptions] = useState<AddTorrentOptions>(DEFAULT_ADD_OPTIONS)
+  const [draft, setDraft] = useState(emptyDraft)
+  const [options, setOptions] = useState<AddTorrentOptions>(DOWNLOAD_ADD_OPTIONS)
   const [showOptions, setShowOptions] = useState(false)
   const [adding, setAdding] = useState(false)
-  const [dragging, setDragging] = useState(false)
+  const [preview, setPreview] = useState<Preview | null>(null)
+  const [attempt, setAttempt] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Choosing files before adding only works for a single link, as qBittorrent requires.
-  const [metadata, setMetadata] = useState<TorrentMetadata | null>(null)
-  const [metadataSource, setMetadataSource] = useState<string | null>(null)
-  const [priorities, setPriorities] = useState<number[]>([])
-  const [fetchingMetadata, setFetchingMetadata] = useState(false)
-  const fetchRun = useRef(0)
-
-  const linkList = parseLinks(links)
-  const sourceCount = linkList.length + files.length
-  // qBittorrent can apply a file choice to one torrent at a time, from a link or a .torrent file.
-  const singleSource = linkList.length === 1 && files.length === 0 ? linkList[0] : linkList.length === 0 && files.length === 1 ? files[0] : null
-  const canChooseFiles = singleSource !== null
-  const sourceKey = typeof singleSource === 'string' ? singleSource : singleSource ? `file:${singleSource.name}:${singleSource.size}` : null
-  // The file choice belongs to the source it was read from.
-  const activeMetadata = metadata && metadataSource === sourceKey && canChooseFiles ? metadata : null
-
-  // Stops a running file-list request when the page closes.
-  useEffect(() => () => { fetchRun.current++ }, [])
-
-  const set = <K extends keyof AddTorrentOptions>(key: K, value: AddTorrentOptions[K]) => setOptions(prev => ({ ...prev, [key]: value }))
-
-  const keepFiles = (torrents: File[]) =>
-    setFiles(prev => [...prev, ...torrents.filter(file => !prev.some(p => p.name === file.name && p.size === file.size))])
-  const addFiles = (list: FileList | null) => {
-    const torrents = Array.from(list ?? []).filter(file => file.name.toLowerCase().endsWith('.torrent'))
-    if (list?.length && torrents.length < list.length) toast.error(t('Only .torrent files can be added'))
-    keepFiles(torrents)
+  const enqueue = (sources: Source[]) => {
+    if (!sources.length) return
+    setDraft(prev => prev.file || prev.link.trim()
+      ? { ...prev, pending: [...prev.pending, ...sources] }
+      : draftFor(sources[0], [...prev.pending, ...sources.slice(1)]))
   }
 
-  // Files dropped elsewhere on the page and magnet links opened with the app land here.
   useEffect(() => {
     const take = () => {
       const incoming = takeIncoming()
-      if (incoming.links.length) setLinks(prev => [prev.trim(), ...incoming.links].filter(Boolean).join('\n'))
-      if (incoming.files.length) keepFiles(incoming.files)
+      enqueue([...incoming.links, ...incoming.files])
     }
     take()
     return onIncoming(take)
   }, [])
 
-  const onDrop = (e: DragEvent) => {
-    e.preventDefault()
-    setDragging(false)
-    addFiles(e.dataTransfer.files)
-  }
+  const link = draft.link.trim()
+  const source = draft.kind === 'torrent' ? draft.file : isMagnetLink(link) ? link : null
+  const current = source && preview?.source === source && preview.attempt === attempt ? preview : null
+  const ready = current && 'metadata' in current ? current : null
+  const metadataError = current && 'error' in current ? current.error : null
+  const fetching = !!source && !current
+  const set = <K extends keyof AddTorrentOptions>(key: K, value: AddTorrentOptions[K]) => setOptions(prev => ({ ...prev, [key]: value }))
 
-  const stopFetching = () => {
-    fetchRun.current++
-    setFetchingMetadata(false)
-  }
-
-  const fetchFileList = async () => {
-    const run = ++fetchRun.current
-    setFetchingMetadata(true)
-    setMetadata(null)
-    const started = Date.now()
-    if (singleSource instanceof File) {
+  useEffect(() => {
+    if (!source) return
+    const controller = new AbortController()
+    const { signal } = controller
+    const fail = (error: string) => setPreview({ source, attempt, error })
+    const timeout = window.setTimeout(() => {
+      controller.abort()
+      fail(typeof source === 'string'
+        ? t('Couldn\'t get the file list in time. A magnet link needs peers to share it.')
+        : t('Couldn\'t get the file list in time'))
+    }, METADATA_TIMEOUT_MS)
+    const load = async () => {
       try {
-        // qBittorrent reads the file and keeps it, so it can be added by hash with the chosen files.
-        const [parsed] = await qbitClient.parseMetadata([singleSource])
-        const found = readMetadata(parsed)
-        const hash = (parsed as { hash?: string } | undefined)?.hash
-        if (fetchRun.current !== run) return
-        if (!found || !hash) throw new Error(t('qBittorrent didn\'t return the file list'))
-        setMetadata({ ...found, hash })
-        setMetadataSource(sourceKey)
-        setPriorities(found.files.map(() => 1))
+        let metadata: TorrentMetadata | null
+        if (typeof source === 'string') {
+          // Wait briefly for the pasted link to settle, then poll while qBittorrent finds peers.
+          do {
+            metadata = readMetadata(await qbitClient.fetchMetadata(source, signal))
+            if (metadata || signal.aborted) break
+            await new Promise(resolve => window.setTimeout(resolve, METADATA_POLL_MS))
+          } while (!signal.aborted)
+        } else {
+          const [parsed] = await qbitClient.parseMetadata([source], signal)
+          metadata = readMetadata(parsed)
+          if (!metadata?.hash) throw new Error(t('qBittorrent didn\'t return the file list'))
+        }
+        if (!signal.aborted && metadata) {
+          setPreview({ source, attempt, metadata, priorities: metadata.files.map(file => file.priority === 0 ? 0 : 1) })
+        }
       } catch (error) {
-        if (fetchRun.current !== run) return
-        const message = error instanceof Error ? error.message : ''
-        toast.error(t('Couldn\'t read the .torrent file'), { description: message.includes('404') ? t('This needs qBittorrent 5.2 or newer.') : message || undefined })
+        if (!signal.aborted) fail(error instanceof Error ? error.message : t('Couldn\'t get the file list'))
       } finally {
-        if (fetchRun.current === run) setFetchingMetadata(false)
+        window.clearTimeout(timeout)
       }
-      return
     }
-    const source = linkList[0]
-    try {
-      while (fetchRun.current === run) {
-        const found = readMetadata(await qbitClient.fetchMetadata(source))
-        if (fetchRun.current !== run) return
-        if (found) {
-          setMetadata(found)
-          setMetadataSource(source)
-          setPriorities(found.files.map(() => 1))
-          return
-        }
-        if (Date.now() - started > METADATA_TIMEOUT_MS) {
-          toast.error(t('Couldn\'t get the file list in time'), { description: t('A magnet link needs peers to share it. You can still add the torrent without choosing files.') })
-          return
-        }
-        await new Promise(resolve => setTimeout(resolve, METADATA_POLL_MS))
-      }
-    } catch (error) {
-      if (fetchRun.current !== run) return
-      const message = error instanceof Error ? error.message : ''
-      toast.error(t('Couldn\'t get the file list'), {
-        description: message.includes('404') ? t('This needs qBittorrent 5.2 or newer.') : message || undefined,
-      })
-    } finally {
-      if (fetchRun.current === run) setFetchingMetadata(false)
+    const debounce = window.setTimeout(() => void load(), typeof source === 'string' ? 350 : 0)
+    return () => {
+      controller.abort()
+      window.clearTimeout(timeout)
+      window.clearTimeout(debounce)
     }
-  }
+  }, [source, attempt])
+
+  const setPriorities = (change: (priorities: number[]) => number[]) =>
+    setPreview(prev => prev && 'priorities' in prev && prev.source === source && prev.attempt === attempt
+      ? { ...prev, priorities: change(prev.priorities) }
+      : prev)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (sourceCount === 0) {
-      toast.error(t('Add a link or a .torrent file'))
-      return
-    }
-    // A .torrent read for its file list is added by hash, which picks up the copy qBittorrent kept.
-    const addByHash = activeMetadata?.hash && singleSource instanceof File ? activeMetadata.hash : null
-    const params = buildAddParams(options, addByHash ? [addByHash] : linkList, sourceCount)
+    if (adding || !source || !ready || !ready.priorities.some(priority => priority > 0)) return
+    // The preview caches the torrent in qBittorrent. Add by magnet or cached hash so file choices
+    // and the seeding rule are applied in the same request that starts the download.
+    const input = typeof source === 'string' ? source : ready.metadata.hash
+    if (!input) return
+    const params = buildAddParams(options, [input], 1)
     if (typeof params === 'string') {
       toast.error(params)
       return
     }
-    if (activeMetadata && priorities.every(priority => priority === 0)) {
-      toast.error(t('Choose at least one file to download'))
-      return
-    }
-
     setAdding(true)
     try {
-      const result = await qbitClient.addTorrents(params, addByHash ? [] : files, activeMetadata ? priorities : undefined)
-      const { ok, message } = describeAddResult(result, sourceCount)
-      if (ok) {
-        toast.success(message)
-        setLinks('')
-        setFiles([])
-        setMetadata(null)
-        setOptions(prev => ({ ...prev, rename: '' }))
-        if (fileInputRef.current) fileInputRef.current.value = ''
-      } else {
+      const result = await qbitClient.addTorrents(params, [], ready.priorities)
+      const { ok, message } = describeAddResult(result, 1)
+      if (!ok) {
         toast.error(message)
+        return
       }
-      queryClient.invalidateQueries({ queryKey: ['torrents'] })
+      toast.success(message)
+      void queryClient.invalidateQueries({ queryKey: ['torrents'] })
+      if (draft.pending.length) {
+        setDraft(prev => prev.pending.length ? draftFor(prev.pending[0], prev.pending.slice(1)) : emptyDraft())
+        setOptions(DOWNLOAD_ADD_OPTIONS)
+        setShowOptions(false)
+        setAttempt(prev => prev + 1)
+      } else {
+        onClose()
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : ''
-      toast.error(t('Couldn\'t add the torrent'), {
-        description: message.includes('409') ? t('qBittorrent rejected it. It may already be in your list, or the link may be invalid.') : message || undefined,
-      })
+      toast.error(t('Couldn\'t add the torrent'), { description: error instanceof Error ? error.message : undefined })
     } finally {
       setAdding(false)
     }
@@ -227,216 +216,185 @@ export function AddTorrentView() {
   const categoryNames = Object.keys(categories ?? {}).sort()
 
   return (
-    <div className="space-y-4">
-      <PageHeader title={t('Add')} description={t('Add torrents, or create your own')} />
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('Add torrents')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submit} className="space-y-4">
-            <Field label={t('Magnet or torrent links, one per line')} htmlFor="add-links">
-              <textarea
-                id="add-links"
-                rows={3}
-                value={links}
-                onChange={(e) => setLinks(e.target.value)}
-                placeholder={t('magnet:?xt=...')}
-                className="border-input dark:bg-input/30 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-              />
+    <form onSubmit={submit} className="space-y-4">
+      <fieldset className="min-w-0 space-y-4" disabled={adding}>
+        <Tabs value={draft.kind} onValueChange={value => {
+          setDraft(prev => ({ ...prev, kind: value === 'magnet' ? 'magnet' : 'torrent' }))
+          setAttempt(prev => prev + 1)
+        }}>
+          <TabsList className="w-full" aria-label={t('Torrent source')}>
+            <TabsTrigger value="torrent"><FileUp />{t('Torrent file')}</TabsTrigger>
+            <TabsTrigger value="magnet"><Magnet />{t('Magnet link')}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="torrent" className="rounded-md border border-dashed p-3">
+            <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload />
+              {t('Choose .torrent files')}
+            </Button>
+            <span className="ms-2 text-xs text-muted-foreground">{t('or drop them here')}</span>
+            <input ref={fileInputRef} type="file" accept=".torrent,application/x-bittorrent" multiple className="hidden" aria-label={t('Torrent files')} onChange={e => {
+              const files = Array.from(e.currentTarget.files ?? []).filter(file => file.name.toLowerCase().endsWith('.torrent'))
+              e.currentTarget.value = ''
+              if (files.length) setDraft(prev => draftFor(files[0], [...prev.pending, ...files.slice(1)]))
+            }} />
+            {draft.file && <p className="mt-2 break-all text-sm">{draft.file.name}</p>}
+          </TabsContent>
+          <TabsContent value="magnet">
+            <Field label={t('Magnet link')} htmlFor="add-link">
+              <Input id="add-link" value={draft.link} onChange={e => setDraft(prev => ({ ...prev, link: e.target.value }))} autoComplete="off" spellCheck={false} placeholder="magnet:?xt=..." />
+              {link && !source && <p className="text-xs text-muted-foreground">{t('Enter a valid magnet link.')}</p>}
             </Field>
+          </TabsContent>
+        </Tabs>
 
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={onDrop}
-              className={`space-y-2 rounded-md border border-dashed p-3 text-sm ${dragging ? 'border-primary bg-muted' : ''}`}
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="me-2 h-4 w-4" />
-                  {t('Choose .torrent files')}
-                </Button>
-                <span className="text-xs text-muted-foreground">{t('or drop them here')}</span>
-                <input ref={fileInputRef} type="file" accept=".torrent,application/x-bittorrent" multiple className="hidden" aria-label={t('Torrent files')} onChange={(e) => addFiles(e.target.files)} />
-              </div>
-              {files.length > 0 && (
-                <ul className="space-y-1">
-                  {files.map(file => (
-                    <li key={`${file.name}-${file.size}`} className="flex items-center gap-2">
-                      <span className="min-w-0 flex-1 truncate" title={file.name}>{file.name}</span>
-                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label={t('Remove {name}', { name: file.name })} onClick={() => setFiles(prev => prev.filter(f => f !== file))}>
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+        {draft.pending.length > 0 && <p className="text-xs text-muted-foreground">{t('{count} more sources waiting', { count: draft.pending.length })}</p>}
+
+        {fetching && (
+          <p role="status" className="flex items-center gap-2 rounded-md border p-3 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />{t('Getting file list...')}
+          </p>
+        )}
+        {metadataError && (
+          <div role="alert" className="space-y-2 rounded-md border p-3 text-sm">
+            <p className="text-destructive">{t('Couldn\'t get the file list')}: {metadataError}</p>
+            <Button type="button" size="sm" variant="outline" onClick={() => setAttempt(prev => prev + 1)}>{t('Retry')}</Button>
+          </div>
+        )}
+        {ready && (
+          <div className="space-y-2 rounded-md border p-3 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-medium break-all">{ready.metadata.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {t('{size} of {total} selected', {
+                  size: formatBytes(ready.metadata.files.reduce((sum, file, i) => sum + (ready.priorities[i] > 0 ? file.length : 0), 0)),
+                  total: formatBytes(ready.metadata.size),
+                })}
+              </span>
             </div>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="ghost" onClick={() => setPriorities(prev => prev.map(() => 1))}>{t('Select all')}</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setPriorities(prev => prev.map(() => 0))}>{t('Select none')}</Button>
+            </div>
+            <ul className="max-h-56 space-y-1 overflow-y-auto">
+              {ready.metadata.files.map((file, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <Checkbox id={`add-file-${i}`} checked={ready.priorities[i] > 0} onCheckedChange={checked => setPriorities(prev => prev.map((priority, j) => j === i ? (checked ? 1 : 0) : priority))} />
+                  <Label htmlFor={`add-file-${i}`} className="min-w-0 flex-1 break-all text-xs font-normal">{file.path}</Label>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(file.length)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-            {canChooseFiles && (
-              <div className="space-y-2 rounded-md border p-3 text-sm">
-                {!activeMetadata ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" size="sm" variant="outline" disabled={fetchingMetadata} onClick={fetchFileList}>
-                      {fetchingMetadata && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-                      {fetchingMetadata ? t('Getting file list...') : t('Choose files first')}
-                    </Button>
-                    {fetchingMetadata && <Button type="button" size="sm" variant="ghost" onClick={stopFetching}>{t('Stop')}</Button>}
-                    <span className="text-xs text-muted-foreground">{singleSource instanceof File ? t('Optional.') : t('Optional. Magnet links need peers to share the list.')}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-medium break-all">{activeMetadata.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {t('{size} of {total} selected', { size: formatBytes(activeMetadata.files.reduce((sum, file, i) => sum + (priorities[i] > 0 ? file.length : 0), 0)), total: formatBytes(activeMetadata.size) })}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button type="button" size="sm" variant="ghost" onClick={() => setPriorities(activeMetadata.files.map(() => 1))}>{t('Select all')}</Button>
-                      <Button type="button" size="sm" variant="ghost" onClick={() => setPriorities(activeMetadata.files.map(() => 0))}>{t('Select none')}</Button>
-                    </div>
-                    <ul className="max-h-64 space-y-1 overflow-y-auto">
-                      {activeMetadata.files.map((file, i) => (
-                        <li key={file.path} className="flex items-center gap-2">
-                          <Checkbox
-                            aria-label={t('Download {path}', { path: file.path })}
-                            checked={priorities[i] > 0}
-                            onCheckedChange={(checked) => setPriorities(prev => prev.map((p, j) => (j === i ? (checked ? 1 : 0) : p)))}
-                          />
-                          <span className="min-w-0 flex-1 break-all text-xs">{file.path}</span>
-                          <span className="flex-shrink-0 text-xs text-muted-foreground">{formatBytes(file.length)}</span>
-                          <select
-                            aria-label={t('Priority for {path}', { path: file.path })}
-                            value={priorities[i]}
-                            onChange={(e) => setPriorities(prev => prev.map((p, j) => (j === i ? Number(e.target.value) : p)))}
-                            className="border-input dark:bg-input/30 h-7 flex-shrink-0 rounded-md border bg-transparent px-1 text-xs"
-                          >
-                            {FILE_PRIORITIES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-                          </select>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            )}
+        {options.shareLimits.mode === 'custom' && options.shareLimits.action === 'Stop' && options.shareLimits.ratio === '1' && !options.shareLimits.seedingMinutes && !options.shareLimits.inactiveMinutes && (
+          <p className="text-sm text-muted-foreground">{t('Stop seeding at ratio 1.00')}</p>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label={t('Category')} htmlFor="add-category">
+            <select id="add-category" value={options.category} onChange={(e) => set('category', e.target.value)} className={selectClass}>
+              <option value="">{t('No category')}</option>
+              {categoryNames.map(name => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </Field>
+          <Field label={t('Tags, separated by commas')} htmlFor="add-tags">
+            <Input id="add-tags" list="add-tag-list" value={options.tags} onChange={(e) => set('tags', e.target.value)} className="h-9" />
+            <datalist id="add-tag-list">{(tags ?? []).map(tag => <option key={tag} value={tag} />)}</datalist>
+          </Field>
+        </div>
 
+        <Field label={t('Save path (blank = default)')} htmlFor="add-save-path">
+          <Input id="add-save-path" value={options.savePath} onChange={(e) => set('savePath', e.target.value)} className="h-9" />
+          <FreeSpaceHint path={options.savePath} />
+        </Field>
+
+        <Button type="button" variant="ghost" size="sm" aria-expanded={showOptions} onClick={() => setShowOptions(!showOptions)}>
+          {showOptions ? t('Hide options') : t('More options')}
+        </Button>
+
+        {showOptions && (
+          <div className="space-y-3 rounded-md border p-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label={t('Category')} htmlFor="add-category">
-                <select id="add-category" value={options.category} onChange={(e) => set('category', e.target.value)} className={selectClass}>
-                  <option value="">{t('No category')}</option>
-                  {categoryNames.map(name => <option key={name} value={name}>{name}</option>)}
+              <Field label={t('Content layout')} htmlFor="add-layout">
+                <select id="add-layout" value={options.contentLayout} onChange={(e) => set('contentLayout', e.target.value as AddTorrentOptions['contentLayout'])} className={selectClass}>
+                  <option value="">{t('qBittorrent\'s default')}</option>
+                  <option value="Original">{t('Original')}</option>
+                  <option value="Subfolder">{t('Create subfolder')}</option>
+                  <option value="NoSubfolder">{t('Don\'t create subfolder')}</option>
                 </select>
               </Field>
-              <Field label={t('Tags, separated by commas')} htmlFor="add-tags">
-                <Input id="add-tags" list="add-tag-list" value={options.tags} onChange={(e) => set('tags', e.target.value)} className="h-9" />
-                <datalist id="add-tag-list">{(tags ?? []).map(tag => <option key={tag} value={tag} />)}</datalist>
+              <Field label={t('Automatic management')} htmlFor="add-auto-tmm">
+                <TriSelect id="add-auto-tmm" value={options.autoTMM} onChange={(value) => set('autoTMM', value)} labels={["qBittorrent's default", 'On', 'Off']} />
+              </Field>
+              <Field label={t('Add to top of queue')} htmlFor="add-queue-top">
+                <TriSelect id="add-queue-top" value={options.addToTopOfQueue} onChange={(value) => set('addToTopOfQueue', value)} labels={["qBittorrent's default", 'Yes', 'No']} />
+              </Field>
+              <Field label={t('Separate folder for incomplete files')} htmlFor="add-use-download-path">
+                <TriSelect id="add-use-download-path" value={options.useDownloadPath} onChange={(value) => set('useDownloadPath', value)} labels={["qBittorrent's default", 'Yes', 'No']} />
               </Field>
             </div>
 
-            <Field label={t('Save path (blank = default)')} htmlFor="add-save-path">
-              <Input id="add-save-path" value={options.savePath} onChange={(e) => set('savePath', e.target.value)} className="h-9" />
-              <FreeSpaceHint path={options.savePath} />
+            {options.useDownloadPath === 'true' && (
+              <Field label={t('Folder for incomplete files (blank = default)')} htmlFor="add-download-path">
+                <Input id="add-download-path" value={options.downloadPath} onChange={(e) => set('downloadPath', e.target.value)} className="h-9" />
+              </Field>
+            )}
+
+            <Field label={t('Rename torrent (blank = keep its name)')} htmlFor="add-rename">
+                <Input id="add-rename" value={options.rename} onChange={(e) => set('rename', e.target.value)} className="h-9" />
             </Field>
 
-            <Button type="button" variant="ghost" size="sm" aria-expanded={showOptions} onClick={() => setShowOptions(!showOptions)}>
-              {showOptions ? t('Hide options') : t('More options')}
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('Download limit (KiB/s)')} htmlFor="add-dl-limit">
+                <Input id="add-dl-limit" type="number" min={0} placeholder={t('No limit')} value={options.dlLimitKiB} onChange={(e) => set('dlLimitKiB', e.target.value)} className="h-9" />
+              </Field>
+              <Field label={t('Upload limit (KiB/s)')} htmlFor="add-up-limit">
+                <Input id="add-up-limit" type="number" min={0} placeholder={t('No limit')} value={options.upLimitKiB} onChange={(e) => set('upLimitKiB', e.target.value)} className="h-9" />
+              </Field>
+            </div>
 
-            {showOptions && (
-              <div className="space-y-3 rounded-md border p-3">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Field label={t('When added')} htmlFor="add-start">
-                    <TriSelect id="add-start" value={options.start} onChange={(value) => set('start', value)} labels={["qBittorrent's default", 'Start', "Don't start"]} />
-                  </Field>
-                  <Field label={t('Stop when')} htmlFor="add-stop-condition">
-                    <select id="add-stop-condition" value={options.stopCondition} disabled={options.start === 'false'} onChange={(e) => set('stopCondition', e.target.value as AddTorrentOptions['stopCondition'])} className={selectClass}>
-                      <option value="None">{t('Never')}</option>
-                      <option value="MetadataReceived">{t('Metadata is received')}</option>
-                      <option value="FilesChecked">{t('Files are checked')}</option>
-                    </select>
-                  </Field>
-                  <Field label={t('Content layout')} htmlFor="add-layout">
-                    <select id="add-layout" value={options.contentLayout} onChange={(e) => set('contentLayout', e.target.value as AddTorrentOptions['contentLayout'])} className={selectClass}>
-                      <option value="">{t('qBittorrent\'s default')}</option>
-                      <option value="Original">{t('Original')}</option>
-                      <option value="Subfolder">{t('Create subfolder')}</option>
-                      <option value="NoSubfolder">{t('Don\'t create subfolder')}</option>
-                    </select>
-                  </Field>
-                  <Field label={t('Automatic management')} htmlFor="add-auto-tmm">
-                    <TriSelect id="add-auto-tmm" value={options.autoTMM} onChange={(value) => set('autoTMM', value)} labels={["qBittorrent's default", 'On', 'Off']} />
-                  </Field>
-                  <Field label={t('Add to top of queue')} htmlFor="add-queue-top">
-                    <TriSelect id="add-queue-top" value={options.addToTopOfQueue} onChange={(value) => set('addToTopOfQueue', value)} labels={["qBittorrent's default", 'Yes', 'No']} />
-                  </Field>
-                  <Field label={t('Separate folder for incomplete files')} htmlFor="add-use-download-path">
-                    <TriSelect id="add-use-download-path" value={options.useDownloadPath} onChange={(value) => set('useDownloadPath', value)} labels={["qBittorrent's default", 'Yes', 'No']} />
-                  </Field>
-                </div>
-
-                {options.useDownloadPath === 'true' && (
-                  <Field label={t('Folder for incomplete files (blank = default)')} htmlFor="add-download-path">
-                    <Input id="add-download-path" value={options.downloadPath} onChange={(e) => set('downloadPath', e.target.value)} className="h-9" />
-                  </Field>
-                )}
-
-                {sourceCount <= 1 && (
-                  <Field label={t('Rename torrent (blank = keep its name)')} htmlFor="add-rename">
-                    <Input id="add-rename" value={options.rename} onChange={(e) => set('rename', e.target.value)} className="h-9" />
-                  </Field>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label={t('Download limit (KiB/s)')} htmlFor="add-dl-limit">
-                    <Input id="add-dl-limit" type="number" min={0} placeholder={t('No limit')} value={options.dlLimitKiB} onChange={(e) => set('dlLimitKiB', e.target.value)} className="h-9" />
-                  </Field>
-                  <Field label={t('Upload limit (KiB/s)')} htmlFor="add-up-limit">
-                    <Input id="add-up-limit" type="number" min={0} placeholder={t('No limit')} value={options.upLimitKiB} onChange={(e) => set('upLimitKiB', e.target.value)} className="h-9" />
-                  </Field>
-                </div>
-
-                <Field label={t('Seeding limits')} htmlFor="add-share-mode">
-                  <select id="add-share-mode" value={options.shareLimits.mode} onChange={(e) => set('shareLimits', { ...options.shareLimits, mode: e.target.value as AddTorrentOptions['shareLimits']['mode'] })} className={selectClass}>
-                    <option value="global">{t('qBittorrent\'s global limits')}</option>
-                    <option value="none">{t('No limit')}</option>
-                    <option value="custom">{t('Custom limits')}</option>
+            <Field label={t('Seeding limits')} htmlFor="add-share-mode">
+              <select id="add-share-mode" value={options.shareLimits.mode} onChange={(e) => set('shareLimits', { ...options.shareLimits, mode: e.target.value as AddTorrentOptions['shareLimits']['mode'] })} className={selectClass}>
+                <option value="global">{t('qBittorrent\'s global limits')}</option>
+                <option value="none">{t('No limit')}</option>
+                <option value="custom">{t('Custom limits')}</option>
+              </select>
+            </Field>
+            {options.shareLimits.mode === 'custom' && (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Field label={t('Ratio')} htmlFor="add-ratio">
+                  <Input id="add-ratio" type="number" min={0} step="any" placeholder={t('No limit')} value={options.shareLimits.ratio} onChange={(e) => set('shareLimits', { ...options.shareLimits, ratio: e.target.value })} className="h-9" />
+                </Field>
+                <Field label={t('Seeding time (minutes)')} htmlFor="add-seeding-time">
+                  <Input id="add-seeding-time" type="number" min={0} step={1} placeholder={t('No limit')} value={options.shareLimits.seedingMinutes} onChange={(e) => set('shareLimits', { ...options.shareLimits, seedingMinutes: e.target.value })} className="h-9" />
+                </Field>
+                <Field label={t('Inactive time (minutes)')} htmlFor="add-inactive-time">
+                  <Input id="add-inactive-time" type="number" min={0} step={1} placeholder={t('No limit')} value={options.shareLimits.inactiveMinutes} onChange={(e) => set('shareLimits', { ...options.shareLimits, inactiveMinutes: e.target.value })} className="h-9" />
+                </Field>
+                <Field label={t('When seeding limits are reached')} htmlFor="add-share-action">
+                  <select id="add-share-action" value={options.shareLimits.action} onChange={e => set('shareLimits', { ...options.shareLimits, action: e.target.value === 'Stop' ? 'Stop' : 'Default' })} className={selectClass}>
+                    <option value="Stop">{t('Stop seeding')}</option>
+                    <option value="Default">{t('qBittorrent\'s default')}</option>
                   </select>
                 </Field>
-                {options.shareLimits.mode === 'custom' && (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <Field label={t('Ratio')} htmlFor="add-ratio">
-                      <Input id="add-ratio" type="number" min={0} step="any" placeholder={t('No limit')} value={options.shareLimits.ratio} onChange={(e) => set('shareLimits', { ...options.shareLimits, ratio: e.target.value })} className="h-9" />
-                    </Field>
-                    <Field label={t('Seeding time (minutes)')} htmlFor="add-seeding-time">
-                      <Input id="add-seeding-time" type="number" min={0} step={1} placeholder={t('No limit')} value={options.shareLimits.seedingMinutes} onChange={(e) => set('shareLimits', { ...options.shareLimits, seedingMinutes: e.target.value })} className="h-9" />
-                    </Field>
-                    <Field label={t('Inactive time (minutes)')} htmlFor="add-inactive-time">
-                      <Input id="add-inactive-time" type="number" min={0} step={1} placeholder={t('No limit')} value={options.shareLimits.inactiveMinutes} onChange={(e) => set('shareLimits', { ...options.shareLimits, inactiveMinutes: e.target.value })} className="h-9" />
-                    </Field>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <CheckField id="add-skip-check" label={t('Skip hash check')} checked={options.skipChecking} onChange={(value) => set('skipChecking', value)} />
-                  <CheckField id="add-sequential" label={t('Sequential download')} checked={options.sequentialDownload} onChange={(value) => set('sequentialDownload', value)} />
-                  <CheckField id="add-first-last" label={t('First and last pieces first')} checked={options.firstLastPiecePrio} onChange={(value) => set('firstLastPiecePrio', value)} />
-                  <CheckField id="add-forced" label={t('Force start')} checked={options.forced} onChange={(value) => set('forced', value)} />
-                </div>
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={adding}>
-              {adding && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
-              {sourceCount > 1 ? t('Add {sourceCount} torrents', { sourceCount }) : t('Add torrent')}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <CheckField id="add-skip-check" label={t('Skip hash check')} checked={options.skipChecking} onChange={(value) => set('skipChecking', value)} />
+              <CheckField id="add-sequential" label={t('Sequential download')} checked={options.sequentialDownload} onChange={(value) => set('sequentialDownload', value)} />
+              <CheckField id="add-first-last" label={t('First and last pieces first')} checked={options.firstLastPiecePrio} onChange={(value) => set('firstLastPiecePrio', value)} />
+              <CheckField id="add-forced" label={t('Force start')} checked={options.forced} onChange={(value) => set('forced', value)} />
+            </div>
+          </div>
+        )}
 
-      <TorrentCreator />
-    </div>
+      </fieldset>
+      <Button type="submit" className="w-full" disabled={adding || !ready?.priorities.some(priority => priority > 0)}>
+        {adding && <Loader2 className="size-4 animate-spin" />}
+        {t('Add and start downloading')}
+      </Button>
+      {!draft.file && !link && <Button type="button" variant="ghost" size="sm" onClick={onCreate}>{t('Create torrent')}</Button>}
+    </form>
   )
 }

@@ -1,4 +1,7 @@
 import { lazy, useEffect, useState, type ComponentType } from 'react'
+import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/sonner'
 import { Layout } from '@/components/Layout'
@@ -16,12 +19,13 @@ const named = <K extends string>(load: () => Promise<Record<K, ComponentType>>, 
 // The torrent list opens first, so it ships in the main script. The other pages load when opened.
 const PAGE_VIEWS: Record<PageId, ComponentType> = {
   torrents: TorrentsView,
-  add: named(() => import('@/components/torrents/AddTorrentView'), 'AddTorrentView'),
   rss: named(() => import('@/components/rss/RSSView'), 'RSSView'),
   search: named(() => import('@/components/search/SearchView'), 'SearchView'),
   logs: named(() => import('@/components/logs/LogsView'), 'LogsView'),
   settings: named(() => import('@/components/settings/SettingsView'), 'SettingsView'),
 }
+
+const AddTorrentDialog = lazy(() => import('@/components/torrents/AddTorrentView').then(module => ({ default: module.AddTorrentDialog })))
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 5000, retry: 1 } } })
 
@@ -30,10 +34,10 @@ const TOAST_OFFSET = { top: 'calc(env(safe-area-inset-top) + 0.125rem)' }
 
 function Screens() {
   const { status } = useSession()
-  // A magnet link the page was opened for starts on the Add page.
-  const [page, setPage] = useState<PageId>(() => (hasIncoming() ? 'add' : 'torrents'))
-  // So do torrents dropped on the page or handed over later.
-  useEffect(() => onIncoming(() => setPage('add')), [])
+  const [page, setPage] = useState<PageId>('torrents')
+  const [addOpen, setAddOpen] = useState(hasIncoming)
+  // Browser magnet links and dropped files open the same card without changing pages.
+  useEffect(() => onIncoming(() => setAddOpen(true)), [])
 
   if (status === 'checking') return <p className="grid min-h-dvh place-items-center text-muted-foreground">{t('Connecting...')}</p>
   if (status === 'signedOut') return <LoginForm />
@@ -45,6 +49,26 @@ function Screens() {
       <PageBoundary key={page}>
         <View />
       </PageBoundary>
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        {page === 'torrents' && (
+          <DialogTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              aria-label={t('Add torrent')}
+              title={t('Add torrent')}
+              className="fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(max(var(--bottom-nav-height,0px),env(safe-area-inset-bottom))+var(--details-height,0px)+var(--table-scrollbar-space,0px)+1rem)] z-30 size-12 rounded-full shadow-lg"
+            >
+              <Plus className="size-6" />
+            </Button>
+          </DialogTrigger>
+        )}
+        {addOpen && (
+          <PageBoundary>
+            <AddTorrentDialog onClose={() => setAddOpen(false)} />
+          </PageBoundary>
+        )}
+      </Dialog>
     </Layout>
   )
 }

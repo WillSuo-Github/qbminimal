@@ -1,8 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
-import { Eye, MoreHorizontal, Pause, Play, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Eye, Pause, Play, Trash2 } from 'lucide-react'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { isStoppedState } from '@/lib/torrentState'
 import type { Torrent } from '@/types'
 import type { MenuGroup } from './bulkActions'
@@ -13,33 +11,11 @@ const INLINE_GROUPS = new Set(['Transfer', 'Organize'])
 
 const countLabel = (torrents: Torrent[]) => (torrents.length === 1 ? torrents[0].name : t('{count} torrents', { count: torrents.length }))
 
-// The More button of the selection bar: every other action, in sections.
-export function MoreMenu({ torrents, groups }: { torrents: Torrent[]; groups: MenuGroup[] }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1" title={t('More actions')}>
-          <MoreHorizontal className="h-4 w-4" />
-          <span className="max-sm:sr-only">{t('More')}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[70vh] max-w-72 overflow-y-auto">
-        <DropdownMenuLabel className="truncate">{countLabel(torrents)}</DropdownMenuLabel>
-        {groups.map(group => (
-          <Fragment key={group.name}>
-            <DropdownMenuSeparator />
-            {group.entries.map(entry => <DropdownMenuItem key={entry.label} onClick={entry.onSelect}>{entry.label}</DropdownMenuItem>)}
-          </Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
 interface TorrentContextMenuProps {
-  // The torrents the menu acts on: the selection, which a right-click on another row replaces.
+  // The row that opened the menu.
   torrents: Torrent[]
   groups: MenuGroup[]
+  onOpenChange: (open: boolean) => void
   onDetails: (torrent: Torrent) => void
   onStart: () => void
   onStop: () => void
@@ -48,12 +24,12 @@ interface TorrentContextMenuProps {
   children: ReactNode
 }
 
-export function TorrentContextMenu({ torrents, groups, onDetails, onStart, onStop, onDelete, children }: TorrentContextMenuProps) {
+export function TorrentContextMenu({ torrents, groups, onOpenChange, onDetails, onStart, onStop, onDelete, children }: TorrentContextMenuProps) {
   const anyStopped = torrents.some(t => isStoppedState(t.state))
   const anyRunning = torrents.some(t => !isStoppedState(t.state))
 
   return (
-    <ContextMenu modal={false}>
+    <ContextMenu onOpenChange={onOpenChange}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       {torrents.length > 0 && (
         <ContextMenuContent className="w-56">

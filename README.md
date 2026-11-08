@@ -37,12 +37,11 @@ The screenshots come from the demo (`npm run demo`), so the torrents are made up
 
 ## Features
 
-- **Torrent list** as a table or as cards. In the table you can show, hide, drag, and resize columns, and sort by any of them. The layout is remembered on each device.
+- **Torrent list** as a table or as cards. Click a table header to sort, right-click it to show or hide columns, or drag to move or resize it. The layout is remembered on each device.
 - **Filters** by name, status, category, tag, and tracker, each showing how many torrents it matches. Save a set of filters as a **view** to apply it again in one tap.
 - **Torrent details**: pieces, transfer facts, files (choose what to download, rename, and save finished files with qBittorrent 5.3), trackers, peers with country flags, and every per-torrent setting: limits, location, queue, category, tags, and more.
-- **Selecting and actions**: click a torrent to open its details in a panel below the list, Ctrl or Cmd-click and Shift-click to select several, and right-click for every action. On phones, tap a torrent for its details and hold one to start selecting.
-- **Bulk actions** for several torrents at once, from the selection bar or the right-click menu.
-- **Add torrents** from links or .torrent files with all of qBittorrent's options. Drop .torrent files anywhere on the page, or let the browser open magnet links here. **Create torrents** from files on the server.
+- **Torrent actions**: click or tap a torrent for details. Right-click or touch and hold it to open its actions.
+- **Add torrents** with the floating button. Pick a .torrent or paste a magnet link to load its files before adding, then choose what to download. The new task starts immediately and defaults to stopping seeding at ratio 1.00. You can also drop .torrent files, open browser magnet links, or create torrents from server files.
 - **RSS** feeds and folders, articles, and download rules, including import and export.
 - **Search** with qBittorrent's search plugins, and plugin management.
 - **Logs**, statistics with a live speed graph, connection status, and the alternative speed limit switch. A notice says when qBittorrent can't be reached.
@@ -55,7 +54,7 @@ The screenshots come from the demo (`npm run demo`), so the torrents are made up
 
 ## Requirements
 
-qBittorrent 5.0 or newer. A few features need a newer version and stay hidden or explain themselves on older ones: SSL settings for torrents need 5.1, reading .torrent files before adding them needs 5.2, and saving finished files from the browser needs 5.3.
+qBittorrent 5.0 or newer. A few features need a newer version and stay hidden or explain themselves on older ones: SSL settings for torrents need 5.1, previewing and selecting files before adding torrents needs 5.2 or newer, and saving finished files from the browser needs 5.3.
 
 ## Installing
 

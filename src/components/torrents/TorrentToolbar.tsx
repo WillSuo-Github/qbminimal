@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import type { TorrentList } from '@/hooks/useTorrentList'
 import type { SortField } from '@/lib/listSettings'
-import { DEFAULT_COLUMN_LAYOUT, getColumn, toggleColumn, type ColumnLayout } from '@/lib/torrentColumns'
+import { DEFAULT_COLUMN_LAYOUT, canToggleColumn, getColumn, toggleColumn, type ColumnLayout } from '@/lib/torrentColumns'
 import { t } from '@/i18n'
 
 // What a card shows, or matters most, for sorting cards. The table sorts from its headers.
@@ -41,7 +41,7 @@ export function TorrentToolbar({ list, filtersOpen, onToggleFilters, columns, on
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t('Drag headers to reorder, or drag their edges to resize')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {columns.order.map(id => (
-              <DropdownMenuCheckboxItem key={id} checked={!columns.hidden.includes(id)} disabled={id === 'name'} onSelect={(e) => e.preventDefault()} onCheckedChange={() => onColumnsChange(toggleColumn(columns, id))}>
+              <DropdownMenuCheckboxItem key={id} checked={!columns.hidden.includes(id)} disabled={!canToggleColumn(columns, id)} onSelect={(e) => e.preventDefault()} onCheckedChange={() => onColumnsChange(toggleColumn(columns, id))}>
                 {getColumn(id).label}
               </DropdownMenuCheckboxItem>
             ))}

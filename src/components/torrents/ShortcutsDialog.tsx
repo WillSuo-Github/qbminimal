@@ -1,32 +1,24 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { t } from '@/i18n'
 
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
-const MOD = isMac ? '⌘' : 'Ctrl'
-
 const GROUPS: { title: string; keys: [string[], string][] }[] = [
   {
     title: t('Mouse'),
     keys: [
-      [[t('Click')], t('Select a torrent and show its details')],
-      [[MOD, t('Click')], t('Add to or remove from the selection')],
-      [[t('Shift'), t('Click')], t('Select everything up to here')],
-      [[t('Right-click')], t('Actions for the selection')],
+      [[t('Click')], t('Show details')],
+      [[t('Right-click')], t('Torrent actions')],
     ],
   },
   {
     title: t('Keyboard'),
     keys: [
       [['↑', '↓'], t('Move to the torrent above or below')],
-      [[t('Shift'), '↑ ↓'], t('Extend the selection')],
       [[t('Home'), t('End')], t('Move to the first or last torrent')],
       [[t('Enter')], t('Show details')],
-      [[t('Space')], t('Select or unselect')],
-      [[MOD, 'A'], t('Select every torrent that matches the filters')],
-      [[t('Delete')], t('Delete the selection')],
-      [[t('Shift'), 'F10'], t('Actions for the selection')],
+      [[t('Delete')], t('Delete this torrent')],
+      [[t('Shift'), 'F10'], t('Torrent actions')],
       [['/'], t('Search and filter')],
-      [[t('Esc')], t('Close the details, then clear the selection')],
+      [[t('Esc')], t('Close the details')],
       [['?'], t('Show this list')],
     ],
   },
@@ -38,7 +30,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('Keyboard and mouse')}</DialogTitle>
-          <DialogDescription>{t('Shortcuts for the torrent list. On a phone, tap a torrent for its details and hold one to start selecting.')}</DialogDescription>
+          <DialogDescription>{t('Shortcuts for the torrent list. On a phone, tap a torrent for its details and hold it for actions.')}</DialogDescription>
         </DialogHeader>
         {GROUPS.map(group => (
           <section key={group.title} className="space-y-1.5">

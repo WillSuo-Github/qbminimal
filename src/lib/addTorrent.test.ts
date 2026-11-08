@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_ADD_OPTIONS, buildAddParams, describeAddResult, parseLinks, readMetadata } from './addTorrent'
+import { DEFAULT_ADD_OPTIONS, DOWNLOAD_ADD_OPTIONS, buildAddParams, describeAddResult, isMagnetLink, readMetadata } from './addTorrent'
 
-describe('parseLinks', () => {
-  it('keeps one link per non-blank line', () => {
-    expect(parseLinks(' magnet:?a \n\nhttps://x.test/a.torrent\n')).toEqual(['magnet:?a', 'https://x.test/a.torrent'])
+describe('isMagnetLink', () => {
+  it('accepts v1 and v2 magnets with a complete info hash', () => {
+    expect(isMagnetLink(`magnet:?xt=urn:btih:${'a'.repeat(40)}&dn=Fixture`)).toBe(true)
+    expect(isMagnetLink(`magnet:?xt=urn:btih:${'a'.repeat(32)}`)).toBe(true)
+    expect(isMagnetLink(`magnet:?xt=urn:btmh:1220${'a'.repeat(64)}`)).toBe(true)
+    expect(isMagnetLink('magnet:?xt=urn:btih:partial')).toBe(false)
+    expect(isMagnetLink('https://example.test/file.torrent')).toBe(false)
   })
 })
 
@@ -47,6 +51,18 @@ describe('buildAddParams', () => {
     expect(buildAddParams({ ...DEFAULT_ADD_OPTIONS, start: 'true', stopCondition: 'MetadataReceived' }, ['m'], 1)).toMatchObject({ stopped: 'false', stopCondition: 'MetadataReceived' })
   })
 
+  it('starts the new torrent even when the server has a default stop condition, and stops seeding at ratio 1', () => {
+    expect(buildAddParams(DOWNLOAD_ADD_OPTIONS, ['cached-hash'], 1)).toEqual({
+      urls: 'cached-hash',
+      stopped: 'false',
+      stopCondition: 'None',
+      ratioLimit: '1',
+      seedingTimeLimit: '-1',
+      inactiveSeedingTimeLimit: '-1',
+      shareLimitAction: 'Stop',
+    })
+  })
+
   it('sends custom seeding limits with their action', () => {
     const params = buildAddParams({ ...DEFAULT_ADD_OPTIONS, shareLimits: { mode: 'custom', ratio: '2', seedingMinutes: '', inactiveMinutes: '', action: 'Stop' } }, ['m'], 1)
     expect(params).toMatchObject({ ratioLimit: '2', seedingTimeLimit: '-1', inactiveSeedingTimeLimit: '-1', shareLimitAction: 'Stop' })
@@ -81,7 +97,7 @@ describe('readMetadata', () => {
 
   it('reads the file list once it arrives', () => {
     expect(readMetadata({ hash: 'abc', info: { name: 'Show', length: 30, files: [{ path: 'Show/a.mkv', length: 30 }] } })).toEqual({
-      name: 'Show', size: 30, files: [{ path: 'Show/a.mkv', length: 30 }],
+      hash: 'abc', name: 'Show', size: 30, files: [{ path: 'Show/a.mkv', length: 30 }],
     })
   })
 })

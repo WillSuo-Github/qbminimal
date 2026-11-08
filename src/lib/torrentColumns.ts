@@ -82,7 +82,7 @@ export const DEFAULT_COLUMN_LAYOUT: ColumnLayout = {
 const isColumnId = (value: unknown): value is ColumnId => typeof value === 'string' && BY_ID.has(value as ColumnId)
 
 // Keeps what it can from a saved layout. Columns added in a later version join next to the column
-// they follow by default, with their default visibility, and the name column can't be hidden.
+// they follow by default, with their default visibility, while keeping a column visible.
 export function parseColumnLayout(raw: string | null): ColumnLayout {
   let saved: Partial<Record<keyof ColumnLayout | 'version', unknown>> = {}
   try {
@@ -99,7 +99,7 @@ export function parseColumnLayout(raw: string | null): ColumnLayout {
     order.splice(before ? order.indexOf(before) + 1 : 0, 0, id)
   })
   let hidden = Array.isArray(saved.hidden)
-    ? [...new Set(saved.hidden.filter(isColumnId))].filter(id => id !== 'name')
+    ? [...new Set(saved.hidden.filter(isColumnId))]
     : DEFAULT_COLUMN_LAYOUT.hidden
   if (savedOrder.length && saved.version !== LAYOUT_VERSION) {
     order.splice(order.indexOf('priority'), 1)
@@ -114,7 +114,9 @@ export function parseColumnLayout(raw: string | null): ColumnLayout {
       if (isColumnId(id) && typeof width === 'number' && Number.isFinite(width)) widths[id] = clampWidth(id, width)
     }
   }
-  return { order, hidden: savedOrder.length ? [...new Set([...hidden, ...newColumns])] : hidden, widths }
+  if (savedOrder.length) hidden = [...new Set([...hidden, ...newColumns])]
+  if (order.every(id => hidden.includes(id))) hidden = hidden.filter(id => id !== 'name')
+  return { order, hidden, widths }
 }
 
 export function clampWidth(id: ColumnId, width: number): number {
@@ -127,8 +129,12 @@ export function visibleColumns(layout: ColumnLayout): ColumnDef[] {
   return layout.order.filter(id => !layout.hidden.includes(id)).map(getColumn)
 }
 
+export function canToggleColumn(layout: ColumnLayout, id: ColumnId): boolean {
+  return layout.hidden.includes(id) || layout.order.some(other => other !== id && !layout.hidden.includes(other))
+}
+
 export function toggleColumn(layout: ColumnLayout, id: ColumnId): ColumnLayout {
-  if (id === 'name') return layout
+  if (!canToggleColumn(layout, id)) return layout
   const hidden = layout.hidden.includes(id) ? layout.hidden.filter(other => other !== id) : [...layout.hidden, id]
   return { ...layout, hidden }
 }

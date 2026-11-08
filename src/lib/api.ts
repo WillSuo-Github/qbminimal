@@ -108,12 +108,12 @@ export class QbitClient {
     return this.send<T>(params ? `${path}?${encode(params)}` : path)
   }
 
-  private post<T = void>(path: string, params: Params = {}): Promise<T> {
-    return this.send<T>(path, { method: 'POST', body: encode(params) })
+  private post<T = void>(path: string, params: Params = {}, signal?: AbortSignal): Promise<T> {
+    return this.send<T>(path, { method: 'POST', body: encode(params), signal })
   }
 
-  private upload<T>(path: string, form: FormData): Promise<T> {
-    return this.send<T>(path, { method: 'POST', body: form })
+  private upload<T>(path: string, form: FormData, signal?: AbortSignal): Promise<T> {
+    return this.send<T>(path, { method: 'POST', body: form, signal })
   }
 
   // --- Session ---
@@ -191,14 +191,14 @@ export class QbitClient {
     this.addTorrents(Object.fromEntries(Object.entries({ urls: url, savepath: options.savePath, category: options.category, downloader: options.downloader }).filter(([, value]) => value)) as Record<string, string>, [])
 
   // Reads .torrent files without adding them. qBittorrent keeps the result, so they can then be added by hash.
-  parseMetadata(files: File[]): Promise<unknown[]> {
+  parseMetadata(files: File[], signal?: AbortSignal): Promise<unknown[]> {
     const form = new FormData()
     for (const file of files) form.append('torrents', file, file.name)
-    return this.upload('torrents/parseMetadata', form)
+    return this.upload('torrents/parseMetadata', form, signal)
   }
 
   // Asks for a link's file list. qBittorrent answers with only the hash until it has the metadata.
-  fetchMetadata = (source: string) => this.post<unknown>('torrents/fetchMetadata', { source })
+  fetchMetadata = (source: string, signal?: AbortSignal) => this.post<unknown>('torrents/fetchMetadata', { source }, signal)
 
   pauseTorrents = (hashes: string[]) => this.post('torrents/stop', { hashes: many(hashes) })
   resumeTorrents = (hashes: string[]) => this.post('torrents/start', { hashes: many(hashes) })

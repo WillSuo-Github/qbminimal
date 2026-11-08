@@ -13,7 +13,7 @@ export interface MenuEntry {
   onSelect: () => void
 }
 
-// Shown as sections of the More menu, and as sections or submenus of the right-click menu.
+// Shown as sections or submenus of the right-click menu.
 export interface MenuGroup {
   name: string
   entries: MenuEntry[]

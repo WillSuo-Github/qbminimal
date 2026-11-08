@@ -47,8 +47,10 @@ export const DEFAULT_ADD_OPTIONS: AddTorrentOptions = {
   shareLimits: { mode: 'global', ratio: '', seedingMinutes: '', inactiveMinutes: '', action: 'Default' },
 }
 
-export function parseLinks(text: string): string[] {
-  return text.split('\n').map(link => link.trim()).filter(Boolean)
+export const DOWNLOAD_ADD_OPTIONS: AddTorrentOptions = {
+  ...DEFAULT_ADD_OPTIONS,
+  start: 'true',
+  shareLimits: { mode: 'custom', ratio: '1', seedingMinutes: '', inactiveMinutes: '', action: 'Stop' },
 }
 
 // Builds torrents/add's text fields. Returns a message instead when an option can't be used.
@@ -68,7 +70,7 @@ export function buildAddParams(options: AddTorrentOptions, links: string[], sour
   if (options.contentLayout) params.contentLayout = options.contentLayout
   if (options.autoTMM) params.autoTMM = options.autoTMM
   if (options.start) params.stopped = options.start === 'true' ? 'false' : 'true'
-  if (options.start !== 'false' && options.stopCondition !== 'None') params.stopCondition = options.stopCondition
+  if (options.start === 'true' || (options.start !== 'false' && options.stopCondition !== 'None')) params.stopCondition = options.stopCondition
   if (options.addToTopOfQueue) params.addToTopOfQueue = options.addToTopOfQueue
   // Web API 2.16.0 renamed skip_checking to seedMode. Each version ignores the name it doesn't know.
   if (options.skipChecking) {
@@ -121,16 +123,26 @@ export function describeAddResult(result: unknown, sourceCount: number): { ok: b
 }
 
 export interface TorrentMetadata {
-  // Set when qBittorrent read a .torrent file, so it can be added by hash.
   hash?: string
   name: string
   size: number
-  files: { path: string; length: number }[]
+  files: { path: string; length: number; priority?: number }[]
+}
+
+export function isMagnetLink(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'magnet:' && url.searchParams.getAll('xt').some(topic =>
+      /^urn:(?:btih:(?:[a-f0-9]{40}|[a-z2-7]{32})|btmh:[a-f0-9]{68})$/i.test(topic),
+    )
+  } catch {
+    return false
+  }
 }
 
 // torrents/fetchMetadata answers with only the hash until qBittorrent has the file list.
 export function readMetadata(body: unknown): TorrentMetadata | null {
-  const info = (body as { info?: { name?: string; length?: number; files?: { path: string; length: number }[] } } | null)?.info
-  if (!info || !Array.isArray(info.files)) return null
-  return { name: info.name ?? '', size: info.length ?? 0, files: info.files }
+  const { info, hash } = (body ?? {}) as { info?: { name?: string; length?: number; files?: TorrentMetadata['files'] }; hash?: string }
+  if (!info || !Array.isArray(info.files) || !info.files.length) return null
+  return { name: info.name ?? '', size: info.length ?? 0, files: info.files, ...(hash ? { hash } : {}) }
 }

@@ -1,25 +1,20 @@
-import { useRef, useState, type DragEvent, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from 'react'
+import { useRef, useState, type DragEvent, type HTMLAttributes, type KeyboardEvent, type PointerEvent, type ReactElement, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
-import { Checkbox } from '@/components/ui/checkbox'
+import { ContextMenu, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { columnWidth, getColumn, moveColumn, resizeColumn, shiftColumn, trackerHost, visibleColumns, type ColumnId, type ColumnLayout } from '@/lib/torrentColumns'
+import { canToggleColumn, columnWidth, getColumn, moveColumn, resizeColumn, shiftColumn, toggleColumn, trackerHost, visibleColumns, type ColumnId, type ColumnLayout } from '@/lib/torrentColumns'
 import { DOWN_SPEED_COLOR, formatEta, getStateBadge, getStateLabel, ratioColor, UP_SPEED_COLOR, peerPair as pair } from '@/lib/torrentState'
 import type { SortDirection } from '@/lib/listSettings'
-import type { RowProps } from '@/hooks/useRowPress'
 import type { Torrent } from '@/types'
 import { useTransferInfo } from '@/hooks/useApi'
 import { BottomScrollbar } from './BottomScrollbar'
 import { t } from '@/i18n'
 
-const SELECT_WIDTH = 40
-// The checkbox stays in view while the other columns scroll sideways. Its background has to be
-// solid, so it mixes the row's hover tint into the card color.
-// Columns of words, which follow the language's direction; all others are numbers or paths.
+// Columns of words follow the language's direction; other columns are numbers or paths.
 const WORD_COLUMNS: ReadonlySet<ColumnId> = new Set(['name', 'state', 'category', 'tags'])
 
-const PINNED_LEFT = 'sticky start-0 z-10 bg-card group-hover:bg-[color-mix(in_oklab,var(--muted)_50%,var(--card))]'
-const PINNED_SELECTED = 'bg-muted group-hover:bg-muted'
+export type RowProps = HTMLAttributes<HTMLElement> & { 'data-hash'?: string }
 
 // A dash in place of a speed of zero, so the moving torrents stand out.
 const speed = (bytes: number, color: string) => (bytes > 0 ? <span className={color}>{formatBytes(bytes)}/s</span> : <span className="text-muted-foreground/60">-</span>)
@@ -77,12 +72,6 @@ interface TorrentTableProps {
   torrents: Torrent[]
   layout: ColumnLayout
   onLayoutChange: (layout: ColumnLayout) => void
-  selected: ReadonlySet<string>
-  // Whether every, some, or none of the matching torrents are selected, for the header checkbox.
-  selectAllState: boolean | 'indeterminate'
-  // A checkbox click. With Shift it selects the range from the last row clicked.
-  onToggle: (hash: string, range: boolean) => void
-  onSelectAll: (checked: boolean) => void
   // The torrent shown in the details panel, marked in the list.
   openHash: string | null
   sortField: ColumnId
@@ -112,11 +101,11 @@ function naturalWidth(cells: Element[], host: HTMLElement): number {
 
 // A table whose columns can be dragged to a new place, resized from their right edge, sorted by
 // clicking, and shown or hidden from the Columns menu. Alt + arrow keys on a header move it too.
-// Clicking a row selects it and opens its details; Ctrl or Cmd adds to the selection, Shift a range.
-export function TorrentTable({ torrents, layout, onLayoutChange, selected, selectAllState, onToggle, onSelectAll, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
+export function TorrentTable({ torrents, layout, onLayoutChange, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
   const { data: serverState } = useTransferInfo()
   // qBittorrent hides its # column while queueing is off, when every torrent would show *.
-  const columns = visibleColumns(layout).filter(def => def.id !== 'priority' || serverState?.queueing !== false)
+  const visible = visibleColumns(layout)
+  const columns = visible.filter(def => def.id !== 'priority' || serverState?.queueing !== false || visible.length === 1)
   const [resizing, setResizing] = useState<{ id: ColumnId; width: number } | null>(null)
   // sign is -1 right to left, where a column's resizing edge is on its left.
   const resizeStart = useRef<{ x: number; width: number; sign: number } | null>(null)
@@ -125,7 +114,7 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
   const scroller = useRef<HTMLDivElement>(null)
 
   const widthOf = (id: ColumnId) => (resizing?.id === id ? resizing.width : columnWidth(layout, id))
-  const total = SELECT_WIDTH + columns.reduce((sum, def) => sum + widthOf(def.id), 0)
+  const total = columns.reduce((sum, def) => sum + widthOf(def.id), 0)
 
   const startResize = (e: PointerEvent<HTMLSpanElement>, id: ColumnId) => {
     e.preventDefault()
@@ -149,9 +138,8 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
     const host = scroller.current
     const index = columns.findIndex(def => def.id === id)
     if (!host || index === -1) return
-    // The first cell of each row is the checkbox.
-    const cells = [...host.querySelectorAll('tbody tr')].map(row => row.children[index + 1]).filter(Boolean)
-    const header = host.querySelectorAll('thead th')[index + 1]
+    const cells = [...host.querySelectorAll('tbody tr')].map(row => row.children[index]).filter(Boolean)
+    const header = host.querySelectorAll('thead th')[index]
     // Room for the sort arrow, so sorting by the column later doesn't cut its header.
     const headerWidth = header ? naturalWidth([header], host) + 18 : 0
     onLayoutChange(resizeColumn(layout, id, Math.max(naturalWidth(cells, host), headerWidth) + 1))
@@ -193,63 +181,77 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
     <div ref={scroller} className="overflow-x-auto overscroll-x-none rounded-xl border bg-card [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <table className="table-fixed caption-bottom text-sm tabular-nums" style={{ width: `max(100%, ${total}px)` }}>
         <colgroup>
-          <col style={{ width: SELECT_WIDTH }} />
           {columns.map(def => <col key={def.id} style={{ width: widthOf(def.id) }} />)}
           {/* Takes any room left over, so the columns keep their widths. */}
           <col />
         </colgroup>
         <thead className="border-b">
           <tr>
-            <th className="sticky start-0 z-10 h-10 bg-card px-2 text-start">
-              <Checkbox aria-label={t('Select all')} checked={selectAllState} onCheckedChange={(checked) => onSelectAll(checked === true)} />
-            </th>
             {columns.map((def, index) => {
               const sorted = sortField === def.id
               // The drop marker shows on the side the column will land.
               const marker = dropTarget === def.id && dragging && dragging !== def.id ? (index < dragIndex ? 'before' : 'after') : null
               return (
-                <th
-                  key={def.id}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, def.id)}
-                  onDragOver={(e) => onDragOver(e, def.id)}
-                  onDragLeave={() => setDropTarget(target => (target === def.id ? null : target))}
-                  onDrop={(e) => onDrop(e, def.id)}
-                  onDragEnd={() => { setDragging(null); setDropTarget(null) }}
-                  aria-sort={sorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
-                  className={cn(
-                    'relative h-10 select-none px-2 text-start align-middle font-medium text-muted-foreground',
-                    dragging === def.id && 'opacity-50',
-                    marker === 'before' && 'shadow-[inset_2px_0_0_var(--color-primary)]',
-                    marker === 'after' && 'shadow-[inset_-2px_0_0_var(--color-primary)]',
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => onSort(def.id)}
-                    onKeyDown={(e) => onHeaderKey(e, def.id)}
-                    title={t('Sort by {label}. Drag to move, or press Alt and an arrow key.', { label: def.label })}
-                    aria-label={def.header ? def.label : undefined}
-                    className={cn('flex w-full min-w-0 cursor-grab items-center gap-1 hover:text-foreground active:cursor-grabbing', def.numeric && 'justify-end', sorted && 'text-foreground')}
-                  >
-                    <span className="truncate">{def.header ?? def.label}</span>
-                    {sorted && (sortDirection === 'asc' ? <ArrowUp className="h-3.5 w-3.5 flex-shrink-0" /> : <ArrowDown className="h-3.5 w-3.5 flex-shrink-0" />)}
-                  </button>
-                  <span
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label={t('Resize {label}', { label: def.label })}
-                    title={t('Drag to resize. Double-click to fit the content.')}
-                    onPointerDown={(e) => startResize(e, def.id)}
-                    onPointerMove={(e) => moveResize(e, def.id)}
-                    onPointerUp={endResize}
-                    onPointerCancel={endResize}
-                    onDoubleClick={() => fitWidth(def.id)}
-                    className="group absolute end-0 top-0 flex h-full w-2 cursor-col-resize touch-none justify-end"
-                  >
-                    <span className={cn('h-full w-px', resizing?.id === def.id ? 'bg-primary' : 'bg-border group-hover:bg-primary/60')} />
-                  </span>
-                </th>
+                <ContextMenu key={def.id}>
+                  <ContextMenuTrigger asChild>
+                    <th
+                      draggable
+                      onDragStart={(e) => onDragStart(e, def.id)}
+                      onDragOver={(e) => onDragOver(e, def.id)}
+                      onDragLeave={() => setDropTarget(target => (target === def.id ? null : target))}
+                      onDrop={(e) => onDrop(e, def.id)}
+                      onDragEnd={() => { setDragging(null); setDropTarget(null) }}
+                      aria-label={def.label}
+                      aria-sort={sorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined}
+                      className={cn(
+                        'relative h-10 select-none px-2 text-start align-middle font-medium text-muted-foreground',
+                        dragging === def.id && 'opacity-50',
+                        marker === 'before' && 'shadow-[inset_2px_0_0_var(--color-primary)]',
+                        marker === 'after' && 'shadow-[inset_-2px_0_0_var(--color-primary)]',
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onSort(def.id)}
+                        onKeyDown={(e) => onHeaderKey(e, def.id)}
+                        title={t('Sort by {label}. Drag to move, or press Alt and an arrow key.', { label: def.label })}
+                        aria-label={def.header ? def.label : undefined}
+                        className={cn('flex w-full min-w-0 cursor-grab items-center gap-1 hover:text-foreground active:cursor-grabbing', def.numeric && 'justify-end', sorted && 'text-foreground')}
+                      >
+                        <span className="truncate">{def.header ?? def.label}</span>
+                        {sorted && (sortDirection === 'asc' ? <ArrowUp className="h-3.5 w-3.5 flex-shrink-0" /> : <ArrowDown className="h-3.5 w-3.5 flex-shrink-0" />)}
+                      </button>
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label={t('Resize {label}', { label: def.label })}
+                        title={t('Drag to resize. Double-click to fit the content.')}
+                        onPointerDown={(e) => startResize(e, def.id)}
+                        onPointerMove={(e) => moveResize(e, def.id)}
+                        onPointerUp={endResize}
+                        onPointerCancel={endResize}
+                        onDoubleClick={() => fitWidth(def.id)}
+                        className="group absolute end-0 top-0 flex h-full w-2 cursor-col-resize touch-none justify-end"
+                      >
+                        <span className={cn('h-full w-px', resizing?.id === def.id ? 'bg-primary' : 'bg-border group-hover:bg-primary/60')} />
+                      </span>
+                    </th>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuLabel>{t('Columns')}</ContextMenuLabel>
+                    <ContextMenuSeparator />
+                    {layout.order.map(id => (
+                      <ContextMenuCheckboxItem
+                        key={id}
+                        checked={!layout.hidden.includes(id)}
+                        disabled={!canToggleColumn(layout, id)}
+                        onCheckedChange={() => onLayoutChange(toggleColumn(layout, id))}
+                      >
+                        {getColumn(id).label}
+                      </ContextMenuCheckboxItem>
+                    ))}
+                  </ContextMenuContent>
+                </ContextMenu>
               )
             })}
             <th aria-hidden />
@@ -258,26 +260,15 @@ export function TorrentTable({ torrents, layout, onLayoutChange, selected, selec
         {wrapBody(
           <tbody>
             {torrents.map(torrent => {
-              const isSelected = selected.has(torrent.hash)
               return (
                 <tr
                   key={torrent.hash}
                   {...rowProps(torrent)}
-                  aria-selected={isSelected}
                   className={cn(
                     'group cursor-default border-b transition-colors outline-none select-none last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [-webkit-touch-callout:none]',
-                    isSelected && 'bg-muted',
                     openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)] rtl:shadow-[inset_-3px_0_0_var(--color-primary)]',
                   )}
                 >
-                  <td className={cn('px-2 py-1.5', PINNED_LEFT, isSelected && PINNED_SELECTED, openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)] rtl:shadow-[inset_-3px_0_0_var(--color-primary)]')}>
-                    <Checkbox
-                      aria-label={t('Select {name}', { name: torrent.name })}
-                      checked={isSelected}
-                      // Handled here rather than on change, to see whether Shift is down.
-                      onClick={(e) => { e.preventDefault(); onToggle(torrent.hash, e.shiftKey) }}
-                    />
-                  </td>
                   {columns.map(def => (
                     <td key={def.id} className={cn('truncate px-2 py-1.5 whitespace-nowrap', def.numeric && 'text-end', def.id === 'name' && 'text-xs font-medium')}>
                       {/* Numbers, sizes, dates and paths read left to right, also in a right-to-left language. */}

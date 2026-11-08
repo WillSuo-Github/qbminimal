@@ -16,7 +16,7 @@ describe('column layout', () => {
     expect(layout.order).toHaveLength(COLUMN_IDS.length)
     expect(layout.hidden).toContain('size')
     expect(layout.hidden).toContain('tags')
-    expect(layout.hidden).not.toContain('name')
+    expect(layout.hidden).toContain('name')
     expect(layout.hidden).not.toContain('progress')
     expect(layout.widths).toEqual({ name: 120, ratio: 90 })
   })
@@ -33,10 +33,13 @@ describe('column layout', () => {
     expect(parseColumnLayout('{')).toEqual(DEFAULT_COLUMN_LAYOUT)
   })
 
-  it('hides and shows columns, but never the name', () => {
+  it('hides and shows columns, including the name, while leaving one visible', () => {
     expect(toggleColumn(DEFAULT_COLUMN_LAYOUT, 'size').hidden).toContain('size')
     expect(toggleColumn(DEFAULT_COLUMN_LAYOUT, 'tags').hidden).not.toContain('tags')
-    expect(toggleColumn(DEFAULT_COLUMN_LAYOUT, 'name')).toBe(DEFAULT_COLUMN_LAYOUT)
+    expect(toggleColumn(DEFAULT_COLUMN_LAYOUT, 'name').hidden).toContain('name')
+    const one = { ...DEFAULT_COLUMN_LAYOUT, hidden: COLUMN_IDS.filter(id => id !== 'size') }
+    expect(toggleColumn(one, 'size')).toBe(one)
+    expect(visibleColumns(parseColumnLayout(JSON.stringify({ ...one, hidden: COLUMN_IDS })))).toHaveLength(1)
   })
 
   it('moves columns by drag target or one step', () => {

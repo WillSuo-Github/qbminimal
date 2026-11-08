@@ -1,19 +1,14 @@
 import type { ComponentType, ReactElement, ReactNode } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown, Clock, HardDrive, Users } from 'lucide-react'
-import { Checkbox } from '@/components/ui/checkbox'
 import { formatBytes } from '@/lib/format'
 import { DOWN_SPEED_COLOR, formatEta, getStateColor, getStateLabel, ratioColor, UP_SPEED_COLOR, peerPair as pair } from '@/lib/torrentState'
 import { cn } from '@/lib/utils'
-import type { RowProps } from '@/hooks/useRowPress'
+import type { RowProps } from './TorrentTable'
 import type { Torrent } from '@/types'
 import { t } from '@/i18n'
 
 interface TorrentCardsProps {
   torrents: Torrent[]
-  selected: ReadonlySet<string>
-  // Checkboxes show while selecting, and always where there's a mouse.
-  showCheckboxes: boolean
-  onToggle: (hash: string, range: boolean) => void
   openHash: string | null
   rowProps: (torrent: Torrent) => RowProps
   wrapList: (list: ReactElement) => ReactNode
@@ -52,32 +47,20 @@ function Speed({ icon: Icon, bytes, color, label }: { icon: ComponentType<{ clas
   )
 }
 
-// The phone layout: one card per torrent. A tap opens its details, and holding a card starts
-// selecting, after which taps add or remove cards. Wide screens get a grid.
-export function TorrentCards({ torrents, selected, showCheckboxes, onToggle, openHash, rowProps, wrapList }: TorrentCardsProps) {
+// A tap opens details; a hold opens the action menu.
+export function TorrentCards({ torrents, openHash, rowProps, wrapList }: TorrentCardsProps) {
   return wrapList(
     <ul className="grid items-start gap-2 lg:grid-cols-2 2xl:grid-cols-3">
       {torrents.map(torrent => {
-        const isSelected = selected.has(torrent.hash)
         return (
           <li
             key={torrent.hash}
             {...rowProps(torrent)}
-            aria-selected={isSelected}
             className={cn(
               'flex cursor-default items-start gap-2 rounded-xl border bg-card px-3 py-2.5 shadow-sm transition-[transform,border-color] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [-webkit-touch-callout:none] active:scale-[0.99]',
-              isSelected && 'border-primary ring-1 ring-primary',
-              openHash === torrent.hash && !isSelected && 'border-primary/60',
+              openHash === torrent.hash && 'border-primary/60',
             )}
           >
-            {showCheckboxes && (
-              <Checkbox
-                className="mt-0.5"
-                aria-label={t('Select {name}', { name: torrent.name })}
-                checked={isSelected}
-                onClick={(e) => { e.preventDefault(); onToggle(torrent.hash, e.shiftKey) }}
-              />
-            )}
             <div className="min-w-0 flex-1">
               {/* The status has room for the usual ones ("Downloading", "Missing Files"), so the
                   percentage beside it stays put as the status changes. */}
