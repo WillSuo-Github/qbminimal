@@ -264,9 +264,10 @@ export function TorrentTable({ torrents, layout, onLayoutChange, openHash, sortF
                 <tr
                   key={torrent.hash}
                   {...rowProps(torrent)}
+                  aria-current={openHash === torrent.hash || undefined}
                   className={cn(
                     'group cursor-default border-b transition-colors outline-none select-none last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [-webkit-touch-callout:none]',
-                    openHash === torrent.hash && 'shadow-[inset_3px_0_0_var(--color-primary)] rtl:shadow-[inset_-3px_0_0_var(--color-primary)]',
+                    openHash === torrent.hash && 'bg-primary/10 hover:bg-primary/15',
                   )}
                 >
                   {columns.map(def => (

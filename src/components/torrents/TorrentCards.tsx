@@ -56,9 +56,10 @@ export function TorrentCards({ torrents, openHash, rowProps, wrapList }: Torrent
           <li
             key={torrent.hash}
             {...rowProps(torrent)}
+            aria-current={openHash === torrent.hash || undefined}
             className={cn(
               'flex cursor-default items-start gap-2 rounded-xl border bg-card px-3 py-2.5 shadow-sm transition-[transform,border-color] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [-webkit-touch-callout:none] active:scale-[0.99]',
-              openHash === torrent.hash && 'border-primary/60',
+              openHash === torrent.hash && 'border-primary/30 bg-primary/10',
             )}
           >
             <div className="min-w-0 flex-1">

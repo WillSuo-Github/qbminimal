@@ -20,9 +20,9 @@ import {
   type AddTorrentOptions,
   type TorrentMetadata,
 } from '@/lib/addTorrent'
-import { formatBytes } from '@/lib/format'
 import { onIncoming, takeIncoming } from '@/lib/incoming'
 import { TorrentCreator } from './TorrentCreator'
+import { TorrentFilePicker } from './TorrentFilePicker'
 import { t } from '@/i18n'
 
 const selectClass = 'border-input dark:bg-input/30 h-9 w-full rounded-md border bg-transparent px-2 text-sm'
@@ -75,7 +75,7 @@ export function AddTorrentDialog({ onClose }: { onClose: () => void }) {
   const [creator, setCreator] = useState(false)
 
   return (
-    <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:max-w-xl sm:p-6">
+    <DialogContent className="max-h-[calc(100dvh-2rem)] grid-cols-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto p-4 sm:max-w-xl sm:p-6">
       <DialogHeader>
         <DialogTitle>{creator ? t('Create torrent') : t('Add torrent')}</DialogTitle>
         <DialogDescription>
@@ -216,7 +216,7 @@ function AddTorrentForm({ onClose, onCreate }: { onClose: () => void; onCreate: 
   const categoryNames = Object.keys(categories ?? {}).sort()
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="min-w-0 space-y-4">
       <fieldset className="min-w-0 space-y-4" disabled={adding}>
         <Tabs value={draft.kind} onValueChange={value => {
           setDraft(prev => ({ ...prev, kind: value === 'magnet' ? 'magnet' : 'torrent' }))
@@ -261,30 +261,12 @@ function AddTorrentForm({ onClose, onCreate }: { onClose: () => void; onCreate: 
           </div>
         )}
         {ready && (
-          <div className="space-y-2 rounded-md border p-3 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-medium break-all">{ready.metadata.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {t('{size} of {total} selected', {
-                  size: formatBytes(ready.metadata.files.reduce((sum, file, i) => sum + (ready.priorities[i] > 0 ? file.length : 0), 0)),
-                  total: formatBytes(ready.metadata.size),
-                })}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" size="sm" variant="ghost" onClick={() => setPriorities(prev => prev.map(() => 1))}>{t('Select all')}</Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setPriorities(prev => prev.map(() => 0))}>{t('Select none')}</Button>
-            </div>
-            <ul className="max-h-56 space-y-1 overflow-y-auto">
-              {ready.metadata.files.map((file, i) => (
-                <li key={i} className="flex items-center gap-2">
-                  <Checkbox id={`add-file-${i}`} checked={ready.priorities[i] > 0} onCheckedChange={checked => setPriorities(prev => prev.map((priority, j) => j === i ? (checked ? 1 : 0) : priority))} />
-                  <Label htmlFor={`add-file-${i}`} className="min-w-0 flex-1 break-all text-xs font-normal">{file.path}</Label>
-                  <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(file.length)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <TorrentFilePicker
+            metadata={ready.metadata}
+            priorities={ready.priorities}
+            onSelectAll={checked => setPriorities(prev => prev.map(() => checked ? 1 : 0))}
+            onToggleFile={(index, checked) => setPriorities(prev => prev.map((priority, i) => i === index ? (checked ? 1 : 0) : priority))}
+          />
         )}
 
         {options.shareLimits.mode === 'custom' && options.shareLimits.action === 'Stop' && options.shareLimits.ratio === '1' && !options.shareLimits.seedingMinutes && !options.shareLimits.inactiveMinutes && (
