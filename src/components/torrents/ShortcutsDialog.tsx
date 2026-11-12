@@ -1,12 +1,16 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { t } from '@/i18n'
 
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'
+
 const GROUPS: { title: string; keys: [string[], string][] }[] = [
   {
     title: t('Mouse'),
     keys: [
       [[t('Click')], t('Show details')],
-      [[t('Right-click')], t('Torrent actions')],
+      [[MOD, t('Click')], t('Add to or remove from the selection')],
+      [[t('Shift'), t('Click')], t('Select everything up to here')],
+      [[t('Right-click')], t('Actions for the selection')],
     ],
   },
   {
@@ -15,10 +19,10 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [['↑', '↓'], t('Move to the torrent above or below')],
       [[t('Home'), t('End')], t('Move to the first or last torrent')],
       [[t('Enter')], t('Show details')],
-      [[t('Delete')], t('Delete this torrent')],
+      [[t('Delete')], t('Delete the selection')],
       [[t('Shift'), 'F10'], t('Torrent actions')],
       [['/'], t('Search and filter')],
-      [[t('Esc')], t('Close the details')],
+      [[t('Esc')], t('Close the details, then clear the selection')],
       [['?'], t('Show this list')],
     ],
   },

@@ -12,7 +12,7 @@ const INLINE_GROUPS = new Set(['Transfer', 'Organize'])
 const countLabel = (torrents: Torrent[]) => (torrents.length === 1 ? torrents[0].name : t('{count} torrents', { count: torrents.length }))
 
 interface TorrentContextMenuProps {
-  // The row that opened the menu.
+  // Selected torrents, or just the row that opened the menu when it was not selected.
   torrents: Torrent[]
   groups: MenuGroup[]
   onOpenChange: (open: boolean) => void

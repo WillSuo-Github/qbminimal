@@ -6,6 +6,7 @@ import { PageBoundary } from '@/components/PageBoundary'
 import { PageHeader } from '@/components/PageHeader'
 import { useCategories, useDeleteTorrents, usePauseTorrents, useResumeTorrents, useTags, useTorrents, useTrackerMap } from '@/hooks/useApi'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useSelection } from '@/hooks/useSelection'
 import { useTorrentList } from '@/hooks/useTorrentList'
 import { PAGE_SIZES } from '@/lib/listSettings'
 import { loadFilterViews, type FilterView } from '@/lib/filterViews'
@@ -32,8 +33,8 @@ const EMPTY: Torrent[] = []
 
 // Keys typed into a field, or pressed while a dialog or menu is open, aren't list shortcuts.
 function isListShortcut(event: KeyboardEvent) {
-  const target = event.target as HTMLElement
-  if (target.closest('input, textarea, select, [contenteditable="true"]')) return false
+  const target = event.target
+  if (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]')) return false
   return !document.querySelector('[role="dialog"], [role="menu"]')
 }
 
@@ -47,7 +48,7 @@ export function TorrentsView() {
   const resume = useResumeTorrents()
   const remove = useDeleteTorrents()
   const wide = useMediaQuery('(min-width: 1200px)')
-  const [menuHash, setMenuHash] = useState<string | null>(null)
+  const selection = useSelection(list.rows.map(t => t.hash), JSON.stringify([list.filters, list.page]))
   const menuOpen = useRef(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
@@ -56,7 +57,7 @@ export function TorrentsView() {
   // A new id for each request starts the delete dialog fresh.
   const [deleteRequest, setDeleteRequest] = useState<{ id: number; torrents: Torrent[] }>({ id: 0, torrents: [] })
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [prompt, setPrompt] = useState<{ kind: BulkPrompt; torrent: Torrent } | null>(null)
+  const [prompt, setPrompt] = useState<{ kind: BulkPrompt; torrents: Torrent[] } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [views, setViews] = useState<FilterView[]>(loadFilterViews)
   // The row that Tab reaches and the arrow keys move from.
@@ -64,10 +65,9 @@ export function TorrentsView() {
 
   // Looked up on every refresh, so open details stay current. Torrents deleted elsewhere drop out.
   const detailsTorrent = torrents.find(t => t.hash === detailsHash)
-  const menuTorrent = torrents.find(t => t.hash === menuHash)
-  const menuTargets = menuTorrent ? [menuTorrent] : EMPTY
+  const menuTargets = list.rows.filter(t => selection.selected.has(t.hash))
   const groups = useBulkActions(menuTargets, kind => {
-    if (menuTorrent) setPrompt({ kind, torrent: menuTorrent })
+    if (menuTargets.length) setPrompt({ kind, torrents: menuTargets })
   })
   const closeDetails = useCallback(() => setDetailsHash(null), [])
 
@@ -84,6 +84,7 @@ export function TorrentsView() {
   const confirmDelete = (withFiles: boolean) => {
     const hashes = deleteRequest.torrents.map(t => t.hash)
     remove.mutate({ hashes, deleteFiles: withFiles })
+    selection.remove(hashes)
     if (detailsHash && hashes.includes(detailsHash)) closeDetails()
     setDeleteOpen(false)
   }
@@ -98,27 +99,46 @@ export function TorrentsView() {
       const next = list.rows[Math.max(0, Math.min(list.rows.length - 1, moves[event.key]))]
       if (!next) return
       document.querySelector<HTMLElement>(`[data-hash="${next.hash}"]`)?.focus()
-      if (detailsHash) setDetailsHash(next.hash)
+      if (event.shiftKey) selection.extendTo(next.hash, event.metaKey || event.ctrlKey)
+      else if (!event.metaKey && !event.ctrlKey) selection.only(next.hash)
+      if (detailsHash && !event.shiftKey && !event.metaKey && !event.ctrlKey) setDetailsHash(next.hash)
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      setDetailsHash(torrent.hash)
+      if (event.key === ' ' && (event.metaKey || event.ctrlKey)) selection.toggle(torrent.hash)
+      else {
+        selection.only(torrent.hash)
+        setDetailsHash(torrent.hash)
+      }
     } else if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
       event.preventDefault()
       const { left, bottom } = event.currentTarget.getBoundingClientRect()
       event.currentTarget.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: left + 16, clientY: bottom }))
     } else if (event.key === 'Delete') {
       event.preventDefault()
-      askToDelete([torrent])
+      askToDelete(selection.selected.has(torrent.hash) ? menuTargets : [torrent])
     }
   }
   const rowProps = (torrent: Torrent): RowProps => ({
-    onClick: () => {
-      if (!menuOpen.current) setDetailsHash(hash => hash === torrent.hash ? null : torrent.hash)
+    onClick: event => {
+      if (menuOpen.current || (event.target as HTMLElement).closest('button, a, input, select, textarea')) return
+      if (event.shiftKey) {
+        event.preventDefault()
+        selection.extendTo(torrent.hash, event.metaKey || event.ctrlKey)
+      } else if (event.metaKey || event.ctrlKey) {
+        event.preventDefault()
+        selection.toggle(torrent.hash)
+        if (detailsHash === torrent.hash && selection.selected.has(torrent.hash)) closeDetails()
+      } else {
+        selection.only(torrent.hash)
+        setDetailsHash(hash => hash === torrent.hash ? null : torrent.hash)
+      }
     },
-    onContextMenu: () => setMenuHash(torrent.hash),
+    onContextMenu: () => {
+      if (!selection.selected.has(torrent.hash)) selection.only(torrent.hash)
+    },
     // Radix opens the same menu on touch and pen holds.
     onPointerDown: event => {
-      if (event.pointerType !== 'mouse') setMenuHash(torrent.hash)
+      if (event.pointerType !== 'mouse' && !selection.selected.has(torrent.hash)) selection.only(torrent.hash)
     },
     'data-hash': torrent.hash,
     tabIndex: torrent.hash === tabStop ? 0 : -1,
@@ -134,8 +154,8 @@ export function TorrentsView() {
       groups={groups}
       onOpenChange={open => { menuOpen.current = open }}
       onDetails={t => setDetailsHash(t.hash)}
-      onStart={() => { if (menuTorrent) resume.mutate([menuTorrent.hash]) }}
-      onStop={() => { if (menuTorrent) pause.mutate([menuTorrent.hash]) }}
+      onStart={() => resume.mutate(menuTargets.map(t => t.hash))}
+      onStop={() => pause.mutate(menuTargets.map(t => t.hash))}
       onDelete={() => askToDelete(menuTargets)}
     >
       {target}
@@ -147,6 +167,7 @@ export function TorrentsView() {
       if (!isListShortcut(event)) return
       if (event.key === 'Escape') {
         closeDetails()
+        selection.clear()
       } else if (event.key === '/') {
         event.preventDefault()
         if (filtersOpen) document.querySelector<HTMLElement>('#torrent-filters input')?.focus()
@@ -222,6 +243,7 @@ export function TorrentsView() {
       ) : list.showTable ? (
         <TorrentTable
           torrents={list.rows}
+          selected={selection.selected}
           layout={columns}
           onLayoutChange={changeColumns}
           openHash={detailsTorrent ? detailsTorrent.hash : null}
@@ -234,6 +256,7 @@ export function TorrentsView() {
       ) : (
         <TorrentCards
           torrents={list.rows}
+          selected={selection.selected}
           openHash={detailsTorrent ? detailsTorrent.hash : null}
           rowProps={rowProps}
           wrapList={withMenu}
@@ -260,7 +283,7 @@ export function TorrentsView() {
       )}
 
       <DeleteTorrentsDialog key={deleteRequest.id} torrents={deleteRequest.torrents} open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={confirmDelete} />
-      <BulkPromptDialog torrents={prompt ? [prompt.torrent] : EMPTY} prompt={prompt?.kind ?? null} onClose={() => setPrompt(null)} />
+      <BulkPromptDialog torrents={prompt?.torrents ?? EMPTY} prompt={prompt?.kind ?? null} onClose={() => setPrompt(null)} />
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
       {manageOpen && (

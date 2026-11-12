@@ -70,6 +70,7 @@ function Cell({ torrent, id }: { torrent: Torrent; id: ColumnId }): ReactNode {
 
 interface TorrentTableProps {
   torrents: Torrent[]
+  selected: ReadonlySet<string>
   layout: ColumnLayout
   onLayoutChange: (layout: ColumnLayout) => void
   // The torrent shown in the details panel, marked in the list.
@@ -101,7 +102,7 @@ function naturalWidth(cells: Element[], host: HTMLElement): number {
 
 // A table whose columns can be dragged to a new place, resized from their right edge, sorted by
 // clicking, and shown or hidden from the Columns menu. Alt + arrow keys on a header move it too.
-export function TorrentTable({ torrents, layout, onLayoutChange, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
+export function TorrentTable({ torrents, selected, layout, onLayoutChange, openHash, sortField, sortDirection, onSort, rowProps, wrapBody }: TorrentTableProps) {
   const { data: serverState } = useTransferInfo()
   // qBittorrent hides its # column while queueing is off, when every torrent would show *.
   const visible = visibleColumns(layout)
@@ -264,10 +265,12 @@ export function TorrentTable({ torrents, layout, onLayoutChange, openHash, sortF
                 <tr
                   key={torrent.hash}
                   {...rowProps(torrent)}
+                  aria-selected={selected.has(torrent.hash)}
+                  data-selected={selected.has(torrent.hash)}
                   aria-current={openHash === torrent.hash || undefined}
                   className={cn(
                     'group cursor-default border-b transition-colors outline-none select-none last:border-0 hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary [-webkit-touch-callout:none]',
-                    openHash === torrent.hash && 'bg-primary/10 hover:bg-primary/15',
+                    selected.has(torrent.hash) && 'bg-primary/10 hover:bg-primary/15',
                   )}
                 >
                   {columns.map(def => (

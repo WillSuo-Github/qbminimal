@@ -24,6 +24,7 @@ const api = vi.hoisted(() => ({
   getWebApiVersion: async () => '2.11.3',
   deleteTorrents: vi.fn(async () => undefined),
   pauseTorrents: vi.fn(async () => undefined),
+  setCategory: vi.fn(async () => undefined),
 }))
 
 // Anything else the page asks for answers with an empty list.
@@ -40,11 +41,13 @@ function renderView() {
   return screen.findByText('alpha')
 }
 
+const selectedNames = () => screen.queryAllByRole('row').filter(r => r.getAttribute('aria-selected') === 'true').map(r => within(r).getAllByRole('cell')[1].textContent)
 const row = (name: string) => within(screen.getByRole('table')).getByText(name).closest('tr') as HTMLElement
 describe('the torrent list', () => {
   beforeEach(() => {
     api.deleteTorrents.mockClear()
     api.pauseTorrents.mockClear()
+    api.setCategory.mockClear()
   })
 
   it('opens and closes details without entering selection mode', async () => {
@@ -125,4 +128,88 @@ describe('the torrent list', () => {
     await user.click(within(menu).getByRole('menuitem', { name: 'Stop' }))
     expect(api.pauseTorrents).toHaveBeenCalledWith(['h2'])
   })
+  it('toggles individual torrents with Cmd and Ctrl, without opening a toolbar', async () => {
+    await renderView()
+    const user = userEvent.setup()
+    fireEvent.click(row('alpha'))
+    fireEvent.click(row('charlie'), { metaKey: true })
+    fireEvent.click(row('delta'), { ctrlKey: true })
+    fireEvent.click(row('charlie'), { metaKey: true })
+    expect(selectedNames()).toEqual(['alpha', 'delta'])
+    expect(screen.queryByRole('toolbar', { name: 'Selected torrents' })).toBeNull()
+    fireEvent.contextMenu(row('delta'))
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).getByText('2 torrents')).toBeTruthy()
+    await user.click(within(menu).getByRole('menuitem', { name: 'Stop' }))
+    expect(api.pauseTorrents).toHaveBeenCalledWith(['h0', 'h3'])
+  })
+
+  it('selects a Shift range and lets it shrink around the same anchor', async () => {
+    await renderView()
+    fireEvent.click(row('bravo'))
+    fireEvent.click(row('delta'), { shiftKey: true })
+    expect(selectedNames()).toEqual(['bravo', 'charlie', 'delta'])
+    fireEvent.click(row('charlie'), { shiftKey: true })
+    expect(selectedNames()).toEqual(['bravo', 'charlie'])
+    fireEvent.click(row('alpha'), { metaKey: true })
+    fireEvent.click(row('bravo'), { shiftKey: true, metaKey: true })
+    expect(selectedNames()).toEqual(['alpha', 'bravo', 'charlie'])
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(selectedNames()).toEqual([])
+  })
+
+  it('uses the displayed sort order for Shift ranges', async () => {
+    await renderView()
+    const user = userEvent.setup()
+    const name = within(screen.getByRole('columnheader', { name: 'Name' })).getByRole('button')
+    await user.click(name)
+    await user.click(name)
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toHaveAttribute('aria-sort', 'descending')
+    fireEvent.click(row('charlie'))
+    fireEvent.click(row('alpha'), { shiftKey: true })
+    expect(selectedNames()).toEqual(['charlie', 'bravo', 'alpha'])
+  })
+
+  it('captures the entire selection for a prompted operation', async () => {
+    await renderView()
+    const user = userEvent.setup()
+    fireEvent.click(row('alpha'))
+    fireEvent.click(row('charlie'), { metaKey: true })
+    fireEvent.contextMenu(row('alpha'))
+    const menu = await screen.findByRole('menu')
+    await user.click(within(menu).getByRole('menuitem', { name: 'Set category...' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Set category' })
+    expect(dialog).toHaveTextContent('Applies to 2 torrents.')
+    await user.click(within(dialog).getByRole('button', { name: 'Apply' }))
+    expect(api.setCategory).toHaveBeenCalledWith(['h0', 'h2'], '')
+  })
+
+  it('replaces a selection on an unselected right-click and a normal click', async () => {
+    await renderView()
+    const user = userEvent.setup()
+    fireEvent.click(row('alpha'))
+    fireEvent.click(row('charlie'), { metaKey: true })
+    fireEvent.contextMenu(row('bravo'))
+    const menu = await screen.findByRole('menu')
+    expect(within(menu).getByText('bravo')).toBeTruthy()
+    await user.click(within(menu).getByRole('menuitem', { name: 'Stop' }))
+    expect(api.pauseTorrents).toHaveBeenCalledWith(['h1'])
+    expect(selectedNames()).toEqual(['bravo'])
+    fireEvent.click(row('delta'))
+    expect(selectedNames()).toEqual(['delta'])
+  })
+
+  it('clears selection when a filter hides rows, including when the filter is removed', async () => {
+    await renderView()
+    const user = userEvent.setup()
+    fireEvent.click(row('alpha'))
+    fireEvent.click(row('charlie'), { metaKey: true })
+    await user.click(screen.getByRole('button', { name: 'Search and filter' }))
+    const input = screen.getByRole('searchbox', { name: 'Filter by name' })
+    await user.type(input, 'alpha')
+    expect(selectedNames()).toEqual([])
+    await user.clear(input)
+    expect(selectedNames()).toEqual([])
+  })
+
 })

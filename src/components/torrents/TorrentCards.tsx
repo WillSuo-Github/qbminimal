@@ -9,6 +9,7 @@ import { t } from '@/i18n'
 
 interface TorrentCardsProps {
   torrents: Torrent[]
+  selected: ReadonlySet<string>
   openHash: string | null
   rowProps: (torrent: Torrent) => RowProps
   wrapList: (list: ReactElement) => ReactNode
@@ -48,7 +49,7 @@ function Speed({ icon: Icon, bytes, color, label }: { icon: ComponentType<{ clas
 }
 
 // A tap opens details; a hold opens the action menu.
-export function TorrentCards({ torrents, openHash, rowProps, wrapList }: TorrentCardsProps) {
+export function TorrentCards({ torrents, selected, openHash, rowProps, wrapList }: TorrentCardsProps) {
   return wrapList(
     <ul className="grid items-start gap-2 lg:grid-cols-2 2xl:grid-cols-3">
       {torrents.map(torrent => {
@@ -56,10 +57,11 @@ export function TorrentCards({ torrents, openHash, rowProps, wrapList }: Torrent
           <li
             key={torrent.hash}
             {...rowProps(torrent)}
+            data-selected={selected.has(torrent.hash)}
             aria-current={openHash === torrent.hash || undefined}
             className={cn(
               'flex cursor-default items-start gap-2 rounded-xl border bg-card px-3 py-2.5 shadow-sm transition-[transform,border-color] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring [-webkit-touch-callout:none] active:scale-[0.99]',
-              openHash === torrent.hash && 'border-primary/30 bg-primary/10',
+              selected.has(torrent.hash) && 'border-primary/30 bg-primary/10',
             )}
           >
             <div className="min-w-0 flex-1">

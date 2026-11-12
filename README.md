@@ -40,7 +40,7 @@ The screenshots come from the demo (`npm run demo`), so the torrents are made up
 - **Torrent list** as a table or as cards. Click a table header to sort, right-click it to show or hide columns, or drag to move or resize it. The layout is remembered on each device.
 - **Filters** by name, status, category, tag, and tracker, each showing how many torrents it matches. Save a set of filters as a **view** to apply it again in one tap.
 - **Torrent details**: pieces, transfer facts, files (choose what to download, rename, and save finished files with qBittorrent 5.3), trackers, peers with country flags, and every per-torrent setting: limits, location, queue, category, tags, and more.
-- **Torrent actions**: click or tap a torrent for details. Right-click or touch and hold it to open its actions.
+- **Torrent actions**: click or tap a torrent for details. Cmd/Ctrl-click toggles individual rows and Shift-click selects a range. Right-click a selected row to act on the entire selection; right-click an unselected row to act on it alone. Touch and hold opens the action menu. No selection toolbar is shown.
 - **Add torrents** with the floating button. Pick a .torrent or paste a magnet link to load its files before adding, then choose what to download. The new task starts immediately and defaults to stopping seeding at ratio 1.00. You can also drop .torrent files, open browser magnet links, or create torrents from server files.
 - **RSS** feeds and folders, articles, and download rules, including import and export.
 - **Search** with qBittorrent's search plugins, and plugin management.
